@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ad_vpn_001",
+    "category": "Tech, Security, Remote Work",
+    "product_name": "NordVPN",
+    "description": "Secure and fast VPN service for digital nomads.",
+    "affiliate_link": "https://go.nordvpn.net/aff_c?offer_id=dummy&aff_id=your_id",
+    "languages": ["en", "es", "ja"]
+  },
+  {
+    "id": "ad_web3_001",
+    "category": "Web3, Crypto, Finance",
+    "product_name": "Binance",
+    "description": "The world's largest cryptocurrency exchange.",
+    "affiliate_link": "https://accounts.binance.com/register?ref=YOUR_REF_ID",
+    "languages": ["en", "es", "ja"]
+  },
+  {
+    "id": "ad_ai_001",
+    "category": "AI, Productivity, Business",
+    "product_name": "Notion AI",
+    "description": "AI-powered workspace for ultimate productivity.",
+    "affiliate_link": "https://ntn.so/your_affiliate_link",
+    "languages": ["en", "es", "ja"]
+  }
+]
