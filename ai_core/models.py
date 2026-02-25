@@ -31,7 +31,7 @@ class ArticleState:
         return f"""---
 title: "{self.title}"
 description: "{self.description}"
-pubDate: "CURRENT_DATETIME"
+date: CURRENT_DATETIME
 tags:
 {tags_str}
 ---

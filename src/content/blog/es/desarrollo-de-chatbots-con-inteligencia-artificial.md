@@ -1,7 +1,7 @@
 ---
 title: "Desarrollo de chatbots con Inteligencia Artificial"
 description: "Aprende a crear chatbots inteligentes y personalizados para mejorar la experiencia del usuario."
-pubDate: "2026-02-25T22:00:34+09:00"
+date: "2026-02-25T22:00:34+09:00"
 tags:
   - Chatbots
   - Inteligencia Artificial

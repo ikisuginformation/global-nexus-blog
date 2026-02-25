@@ -1,7 +1,7 @@
 ---
 title: "Invierte en Web3 con Bajo Riesgo: ¡Empieza Ahora!"
 description: "Descubre cómo iniciar tu aventura en Web3 de manera segura y rentable."
-pubDate: "2026-02-25T20:38:03+09:00"
+date: "2026-02-25T20:38:03+09:00"
 tags:
   - web3
   - inversión

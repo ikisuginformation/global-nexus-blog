@@ -1,7 +1,8 @@
+
 ---
 title: "Unlock the Power of Tech Detox: A Guide to Minimalist Living"
 description: "Discover how a tech detox and minimalist lifestyle can transform your life, improve productivity, and reduce stress."
-pubDate: "2026-02-25T20:39:16+09:00"
+date: "2026-02-25T20:39:16+09:00"
 tags:
   - tech detox
   - minimalist lifestyle

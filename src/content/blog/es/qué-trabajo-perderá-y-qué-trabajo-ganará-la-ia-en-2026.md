@@ -1,7 +1,7 @@
 ---
 title: "¿Qué trabajo perderá y qué trabajo ganará la IA en 2026?"
 description: "Exploramos el impacto de los agentes de inteligencia artificial en el mercado laboral"
-pubDate: "2026-02-25T20:53:56+09:00"
+date: "2026-02-25T20:53:56+09:00"
 tags:
   - Inteligencia artificial
   - Trabajo futuro
