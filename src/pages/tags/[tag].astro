@@ -1,0 +1,60 @@
+---
+// src/pages/tags/[tag].astro
+// タグごとの記事一覧（純白のギャラリー空間）
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TopicScroller from '../../components/TopicScroller.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+
+export async function getStaticPaths() {
+    const allPosts = await getCollection('blog');
+    
+    // AIが変なタグを出しても除外するフィルター
+    const allTags = allPosts.map((post) => post.data.tags || []).flat();
+    const uniqueTags = [...new Set(allTags)].filter(tag => tag && typeof tag === 'string');
+
+    return uniqueTags.map((tag) => {
+        const filteredPosts = allPosts.filter((post) => post.data.tags?.includes(tag));
+        return {
+            params: { tag: tag.toLowerCase() },
+            props: { tag, posts: filteredPosts },
+        };
+    });
+}
+
+const { tag } = Astro.params;
+const { posts } = Astro.props;
+---
+
+<BaseLayout title={`Archive: ${tag.toUpperCase()} - FLUCTUATION`}>
+    
+    <TopicScroller />
+
+    <main class="w-full min-h-screen bg-[#FDFDFD] text-[#0A0A0A] pb-48 selection:bg-[#D4AF37] selection:text-white">
+        
+        <section class="pt-48 px-[10vw] mb-32 max-w-[1600px] mx-auto">
+            <div class="flex flex-col items-start">
+                <div class="flex items-center gap-4 mb-6">
+                    <span class="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse"></span>
+                    <h2 class="text-[10px] font-mono tracking-[0.4em] text-gray-400 uppercase">Filtered Archive</h2>
+                </div>
+                
+                <h1 class="text-6xl md:text-8xl lg:text-[10rem] font-serif font-light text-black leading-none tracking-tighter uppercase">
+                    {tag}
+                </h1>
+                <p class="mt-12 text-sm md:text-base font-sans font-light text-gray-500 max-w-xl border-l border-black/10 pl-6">
+                    「{tag}」に関する知の集積。<br>
+                    {posts.length}件のレコードが見つかりました。
+                </p>
+            </div>
+        </section>
+
+        <section class="px-[5vw] md:px-[10vw] max-w-[1600px] mx-auto flex flex-col">
+            {posts.map((post, index) => (
+                <ArticleCard post={post} index={index} />
+            ))}
+        </section>
+
+    </main>
+</BaseLayout>

@@ -1,0 +1,62 @@
+---
+// src/layouts/BaseLayout.astro
+// ベースとなるHTML骨格と、極上のタイポグラフィ（フォント）の読み込み
+
+// 【重要】ここで全画面検索UIの部品を読み込みます
+import SearchOverlay from '../components/SearchOverlay.astro';
+
+interface Props {
+	title?: string;
+	description?: string;
+	image?: string;
+}
+
+const { 
+    title = "FLUCTUATION", 
+    description = "富と知の集積。", 
+    image = "/favicon.svg" 
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="ja" class="scroll-smooth">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+
+		<title>{title}</title>
+		<meta name="description" content={description} />
+
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+		<style is:global>
+			/* フォントファミリーの強制上書き */
+			:root {
+				--font-serif: 'Cormorant Garamond', 'Shippori Mincho', serif;
+				--font-mono: 'Space Mono', monospace;
+				--font-sans: 'Helvetica Neue', Arial, sans-serif;
+			}
+			
+			body {
+				font-family: var(--font-sans);
+				background-color: #FDFDFD; /* 白練 */
+				color: #0A0A0A; /* 漆黒 */
+			}
+			
+			/* クラスで呼び出せるように設定 */
+			.font-serif { font-family: var(--font-serif); }
+			.font-mono { font-family: var(--font-mono); }
+			.font-sans { font-family: var(--font-sans); }
+		</style>
+	</head>
+	
+    <body class="antialiased selection:bg-[#D4AF37] selection:text-white">
+        <SearchOverlay />
+        
+        <slot />
+	</body>
+</html>

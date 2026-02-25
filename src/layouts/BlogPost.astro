@@ -1,86 +1,111 @@
 ---
-import { Image } from 'astro:assets';
+// src/layouts/BlogPost.astro
+// "The Thesis" - 読むためだけに設計された、学術的かつ詩的な2カラムレイアウト
+
 import type { CollectionEntry } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
+import BaseLayout from './BaseLayout.astro';
 import FormattedDate from '../components/FormattedDate.astro';
-import Header from '../components/Header.astro';
+import TopicScroller from '../components/TopicScroller.astro';
+import AffiliateBlock from '../components/AffiliateBlock.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+// AIが生成したスポンサー情報も受け取れるように型を拡張
+type Props = CollectionEntry<'blog'>['data'] & {
+    sponsor_type?: 'TOOL' | 'BOOK' | 'SERVICE' | 'GEAR';
+    sponsor_title?: string;
+    sponsor_desc?: string;
+    sponsor_url?: string;
+};
 
-const { title, description, date, updatedDate, heroImage } = Astro.props;
+const { 
+    title, description, date, updatedDate, heroImage, language,
+    sponsor_type, sponsor_title, sponsor_desc, sponsor_url 
+} = Astro.props;
 ---
 
-<html lang="en">
-	<head>
-		<BaseHead title={title} description={description} />
-		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-		</style>
-	</head>
+<BaseLayout title={title} description={description} image={heroImage}>
+    
+    <TopicScroller />
 
-	<body>
-		<Header />
-		<main>
-			<article>
-				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
-				</div>
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={date} />
-							{
-								updatedDate && (
-									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
-									</div>
-								)
-							}
-						</div>
-						<h1>{title}</h1>
-						<hr />
-					</div>
-					<slot />
-				</div>
-			</article>
-		</main>
-		<Footer />
-	</body>
-</html>
+    <main class="w-full min-h-screen bg-[#FDFDFD] text-[#0A0A0A] selection:bg-[#D4AF37] selection:text-white">
+        
+        <article class="max-w-[1800px] mx-auto px-[5vw] pt-32 pb-48">
+            
+            <header class="mb-24 border-b border-black/10 pb-12">
+                <div class="flex flex-col gap-6">
+                    <div class="flex items-center gap-4 text-[10px] font-mono tracking-[0.3em] uppercase text-gray-400">
+                        <span>Nº 001</span>
+                        <span class="w-8 h-[1px] bg-gray-300"></span>
+                        <span>{language || 'GLOBAL'}</span>
+                    </div>
+                    
+                    <h1 class="text-5xl md:text-7xl lg:text-8xl font-serif font-light leading-[1.1] tracking-tighter max-w-6xl">
+                        {title}
+                    </h1>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+                
+                <aside class="lg:col-span-3 lg:h-[calc(100vh-200px)] lg:sticky lg:top-32 flex flex-col gap-12 text-xs font-mono tracking-[0.1em] text-gray-500">
+                    
+                    <div class="flex flex-col gap-2">
+                        <span class="uppercase tracking-[0.3em] text-gray-300 mb-2">Published</span>
+                        <FormattedDate date={date} />
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <span class="uppercase tracking-[0.3em] text-gray-300 mb-2">Description</span>
+                        <p class="font-sans font-normal leading-relaxed text-gray-600">
+                            {description}
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <span class="uppercase tracking-[0.3em] text-gray-300 mb-2">Share</span>
+                        <div class="flex gap-4">
+                            <button class="hover:text-black transition-colors">X (Twitter)</button>
+                            <button class="hover:text-black transition-colors">Copy Link</button>
+                        </div>
+                    </div>
+
+                    <div class="hidden lg:block w-[1px] h-full bg-gradient-to-b from-black/10 to-transparent mt-8"></div>
+                </aside>
+
+                <div class="lg:col-span-8 lg:col-start-5">
+                    <div class="prose prose-xl prose-slate max-w-none
+                        prose-headings:font-serif prose-headings:font-light prose-headings:text-black
+                        prose-p:font-sans prose-p:font-light prose-p:text-gray-800 prose-p:leading-[2.4] prose-p:mb-12
+                        prose-strong:font-medium prose-strong:text-black
+                        prose-a:text-[#D4AF37] prose-a:no-underline hover:prose-a:underline
+                        prose-blockquote:border-l-2 prose-blockquote:border-[#D4AF37] prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-500
+                        prose-li:marker:text-gray-300
+                    ">
+                        <slot />
+                    </div>
+
+                    {sponsor_title && sponsor_url && (
+                        <div class="mt-32">
+                            <AffiliateBlock 
+                                type={sponsor_type || 'TOOL'}
+                                title={sponsor_title} 
+                                description={sponsor_desc || ''} 
+                                url={sponsor_url} 
+                            />
+                        </div>
+                    )}
+                </div>
+
+            </div>
+        </article>
+
+        <footer class="border-t border-black/5 py-24 text-center">
+            <a href="/" class="inline-flex flex-col items-center gap-4 group">
+                <span class="w-[1px] h-16 bg-gray-300 group-hover:bg-[#D4AF37] transition-colors duration-500"></span>
+                <span class="text-[10px] font-mono tracking-[0.4em] uppercase text-gray-400 group-hover:text-black transition-colors">
+                    Return to Void
+                </span>
+            </a>
+        </footer>
+
+    </main>
+</BaseLayout>

@@ -1,0 +1,35 @@
+---
+// プロップスを受け取れるようにして汎用性を高める
+interface Props {
+    titlePrimary: string;
+    titleSecondary: string;
+    subtitle: string;
+    ctaText: string;
+    ctaLink: string;
+}
+const { titlePrimary, titleSecondary, subtitle, ctaText, ctaLink } = Astro.props;
+---
+
+<section class="relative py-32 bg-slate-900 overflow-hidden isolate">
+    <div class="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.indigo.100),white)] opacity-20"></div>
+    <div class="absolute inset-y-0 right-1/2 -z-10 mr-16 w-[200%] origin-bottom-left skew-x-[-30deg] bg-white shadow-xl shadow-indigo-600/10 ring-1 ring-indigo-50 sm:mr-28 lg:mr-0 xl:mr-16 xl:origin-center"></div>
+    
+    <div class="mx-auto max-w-7xl px-6 lg:px-8 relative z-10 text-center">
+        <div class="mx-auto max-w-3xl">
+            <h1 class="text-5xl font-extrabold tracking-tight text-white sm:text-7xl drop-shadow-sm">
+                <span class="block">{titlePrimary}</span>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 block mt-2">
+                    {titleSecondary}
+                </span>
+            </h1>
+            <p class="mt-10 text-xl leading-8 text-slate-300 max-w-2xl mx-auto">
+                {subtitle}
+            </p>
+            <div class="mt-12 flex items-center justify-center gap-x-6">
+                <a href={ctaLink} class="rounded-full bg-blue-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500 hover:scale-105 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    {ctaText} <span aria-hidden="true">→</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

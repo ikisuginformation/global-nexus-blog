@@ -1,0 +1,242 @@
+---
+// src/components/GenerativeHero.astro
+// "300k Fluid Particles" - 頂点シェーダーによる究極の流体シミュレーション
+---
+
+<div id="canvas-container" class="fixed inset-0 z-0 pointer-events-none w-screen h-screen bg-[#FDFDFD]"></div>
+
+<section class="relative z-10 w-full min-h-screen flex flex-col justify-center items-center mix-blend-difference text-white pointer-events-none">
+    <h1 class="font-serif text-[15vw] md:text-[12vw] leading-[0.8] tracking-tighter text-center opacity-0 animate-title-in select-none">
+        <span class="block">FLUC</span>
+        <span class="block ml-[10vw]">TUATION</span>
+    </h1>
+    <p class="mt-12 font-mono text-xs md:text-sm tracking-[0.8em] opacity-0 animate-fade-in uppercase select-none">
+        富 と 知 の 集 積 。
+    </p>
+</section>
+
+<style>
+    @keyframes title-in {
+        0% { transform: translateY(50px); opacity: 0; filter: blur(10px); }
+        100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+    }
+    @keyframes fade-in {
+        0% { opacity: 0; }
+        100% { opacity: 0.8; }
+    }
+    .animate-title-in { animation: title-in 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-fade-in { animation: fade-in 3s ease-out 1.5s forwards; }
+</style>
+
+<script>
+    import * as THREE from 'three';
+
+    const canvasContainer = document.getElementById('canvas-container');
+    if (!canvasContainer) throw new Error("Canvas container not found");
+
+    // 1. 基本セットアップ
+    const scene = new THREE.Scene();
+    // 空間を広く見せるためのPerspectiveCameraに変更
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.z = 3;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    canvasContainer.appendChild(renderer.domElement);
+
+    // 2. 圧倒的な数の粒子（30万個）を生成
+    const particleCount = 300000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const randoms = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
+
+    for (let i = 0; i < particleCount; i++) {
+        // 画面全体に広がるように初期位置を散らす
+        positions[i * 3 + 0] = (Math.random() - 0.5) * 6; // X
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 6; // Y
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 2; // Z
+
+        // 粒子ごとの個性（色や動きのランダム性）
+        randoms[i * 3 + 0] = Math.random();
+        randoms[i * 3 + 1] = Math.random();
+        randoms[i * 3 + 2] = Math.random();
+
+        // 粒子のサイズにメリハリをつける
+        sizes[i] = Math.random() * 3.0 + 1.0;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 3));
+    geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+
+    // 3. シェーダーの記述（ここが魔法のコア）
+    const vertexShader = `
+        uniform float uTime;
+        uniform vec2 uMouse;
+        attribute vec3 aRandom;
+        attribute float aSize;
+        varying vec3 vColor;
+        varying float vAlpha;
+
+        // --- 超高速 3D Simplex Noise ---
+        vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+        vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+        float snoise(vec3 v){
+            const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+            const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+            vec3 i  = floor(v + dot(v, C.yyy) );
+            vec3 x0 = v - i + dot(i, C.xxx) ;
+            vec3 g = step(x0.yzx, x0.xyz);
+            vec3 l = 1.0 - g;
+            vec3 i1 = min( g.xyz, l.zxy );
+            vec3 i2 = max( g.xyz, l.zxy );
+            vec3 x1 = x0 - i1 + 1.0 * C.xxx;
+            vec3 x2 = x0 - i2 + 2.0 * C.xxx;
+            vec3 x3 = x0 - 1.0 + 3.0 * C.xxx;
+            i = mod(i, 289.0 );
+            vec4 p = permute( permute( permute( i.z + vec4(0.0, i1.z, i2.z, 1.0 )) + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+            float n_ = 1.0/7.0;
+            vec3  ns = n_ * D.wyz - D.xzx;
+            vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
+            vec4 x_ = floor(j * ns.z);
+            vec4 y_ = floor(j - 7.0 * x_ );
+            vec4 x = x_ *ns.x + ns.yyyy;
+            vec4 y = y_ *ns.x + ns.yyyy;
+            vec4 h = 1.0 - abs(x) - abs(y);
+            vec4 b0 = vec4( x.xy, y.xy );
+            vec4 b1 = vec4( x.zw, y.zw );
+            vec4 s0 = floor(b0)*2.0 + 1.0;
+            vec4 s1 = floor(b1)*2.0 + 1.0;
+            vec4 sh = -step(h, vec4(0.0));
+            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+            vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+            vec3 p0 = vec3(a0.xy,h.x);
+            vec3 p1 = vec3(a0.zw,h.y);
+            vec3 p2 = vec3(a1.xy,h.z);
+            vec3 p3 = vec3(a1.zw,h.w);
+            vec4 m = max(0.6 - vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)), 0.0);
+            m = m * m;
+            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+            p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+            return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+        }
+
+        void main() {
+            vec3 pos = position;
+
+            // 空間全体の大きなうねり
+            float noiseFreq = 0.8;
+            float noiseAmp = 0.6;
+            vec3 noisePos = vec3(pos.x * noiseFreq + uTime * 0.1, pos.y * noiseFreq + uTime * 0.15, pos.z * noiseFreq);
+
+            vec3 displacement = vec3(
+                snoise(noisePos),
+                snoise(noisePos + vec3(100.0)),
+                snoise(noisePos + vec3(200.0))
+            ) * noiseAmp;
+
+            // マウスの引力・斥力（ブラックホール）
+            vec2 xy = pos.xy + displacement.xy;
+            float dist = length(xy - uMouse);
+            // マウスに近づくほど強く影響を受ける
+            float mouseEffect = smoothstep(1.5, 0.0, dist);
+            // マウスの方向に渦を巻くように引き寄せる
+            displacement.xy += normalize(xy - uMouse + 0.0001) * mouseEffect * 0.5;
+            
+            vec3 finalPos = pos + displacement;
+
+            // --- 色の決定 ---
+            // 墨色（黒）と 金箔（ゴールド）の定義
+            vec3 ink = vec3(0.05, 0.05, 0.05);
+            vec3 gold = vec3(0.83, 0.68, 0.21); // #D4AF37
+
+            // 粒子の動きが激しいほど金色に光る
+            float velocity = length(displacement);
+            
+            // 15%の粒子は「純金」の粒として設定
+            float isGold = step(0.85, aRandom.x); 
+            vColor = mix(ink, gold, isGold + smoothstep(0.2, 0.6, velocity) * 0.5);
+            
+            // 動いている粒子ほど不透明度が高い（静止している粒子は背景に溶け込む）
+            vAlpha = smoothstep(0.0, 0.1, velocity) * (0.3 + aRandom.y * 0.7);
+
+            vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            
+            // 遠近感のある粒子サイズ
+            gl_PointSize = aSize * (5.0 / -mvPosition.z);
+        }
+    `;
+
+    const fragmentShader = `
+        varying vec3 vColor;
+        varying float vAlpha;
+
+        void main() {
+            // 四角いパーティクルを「柔らかい円」に削り出す
+            vec2 circCoord = 2.0 * gl_PointCoord - 1.0;
+            float dist = dot(circCoord, circCoord);
+            if (dist > 1.0) discard; // 円の外側を切り捨てる
+
+            // 中心ほど濃く、縁へ向かってぼかす（発光感）
+            float alpha = vAlpha * (1.0 - smoothstep(0.5, 1.0, sqrt(dist)));
+
+            gl_FragColor = vec4(vColor, alpha);
+        }
+    `;
+
+    const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        uniforms: {
+            uTime: { value: 0 },
+            uMouse: { value: new THREE.Vector2(999, 999) } // 初期値は画面外
+        },
+        transparent: true,
+        blending: THREE.NormalBlending, 
+        depthWrite: false // 粒子同士が重なっても黒いフチが出ないようにする
+    });
+
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+
+    // 4. マウス操作とリサイズ対応
+    const mouse = new THREE.Vector2(999, 999);
+    const targetMouse = new THREE.Vector2(999, 999);
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        // マウス座標を -1.0 〜 1.0 の 3D空間座標系に変換
+        targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        // 画面の比率をかけて歪みを補正
+        targetMouse.x *= (window.innerWidth / window.innerHeight);
+    });
+
+    // 5. アニメーションループ
+    const clock = new THREE.Clock();
+    function animate() {
+        const time = clock.getElapsedTime();
+        material.uniforms.uTime.value = time;
+
+        // マウス座標を慣性をつけて遅延させる（流体らしさ）
+        mouse.x += (targetMouse.x - mouse.x) * 0.05;
+        mouse.y += (targetMouse.y - mouse.y) * 0.05;
+        material.uniforms.uMouse.value.copy(mouse);
+
+        // 空間全体をゆっくり回転させて雄大さを出す
+        particles.rotation.y = time * 0.02;
+
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>

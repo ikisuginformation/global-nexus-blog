@@ -1,0 +1,51 @@
+---
+// src/components/TopicScroller.astro
+// 目次（INDEX）と検索ボタン（機能付き）
+---
+
+<div class="w-full border-b border-black/10 bg-[#FDFDFD]/90 backdrop-blur-md sticky top-0 z-50 transition-all duration-500">
+    <div class="max-w-[1600px] mx-auto px-[5vw] h-16 flex items-center justify-between">
+        
+        <div class="flex items-center gap-4">
+            <span class="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse"></span>
+            <span class="text-[9px] font-mono tracking-[0.4em] uppercase text-black">
+                Archive Index
+            </span>
+        </div>
+
+        <nav class="hidden md:flex items-center gap-12 text-[10px] font-mono tracking-[0.2em] uppercase text-gray-400">
+            <a href="/" class="text-black relative group">
+                All
+                <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-100 transition-transform duration-300"></span>
+            </a>
+            <a href="/tags/philosophy" class="hover:text-black relative group transition-colors">
+                Philosophy
+                <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+            </a>
+            <a href="/tags/technology" class="hover:text-black relative group transition-colors">
+                Technology
+                <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+            </a>
+            <a href="/tags/aesthetics" class="hover:text-black relative group transition-colors">
+                Aesthetics
+                <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+            </a>
+        </nav>
+
+        <div class="flex items-center gap-6">
+            <button class="open-search-btn flex items-center gap-2 group cursor-pointer hover:text-black" aria-label="Search">
+                <span class="text-[9px] font-mono tracking-[0.2em] uppercase text-gray-400 group-hover:text-black transition-colors hidden md:block">
+                    Search
+                </span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-black transition-transform group-hover:scale-110">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </button>
+
+            <button class="md:hidden text-[9px] font-mono tracking-[0.3em] uppercase text-black">
+                Menu +
+            </button>
+        </div>
+
+    </div>
+</div>
