@@ -1,24 +1,27 @@
 ---
-// src/pages/tags/[tag].astro
-// タグごとの記事一覧（純白のギャラリー空間）
-
 import { getCollection } from 'astro:content';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import TopicScroller from '../../components/TopicScroller.astro';
-import ArticleCard from '../../components/ArticleCard.astro';
+// ★階層エラーを防ぐため、一番確実なパス指定に変更
+import BaseLayout from '../../../../src/layouts/BaseLayout.astro';
+import Header from '../../../../src/components/Header.astro';
+import Footer from '../../../../src/components/Footer.astro';
+import FormattedDate from '../../../../src/components/FormattedDate.astro';
 
 export async function getStaticPaths() {
     const allPosts = await getCollection('blog');
     
-    // AIが変なタグを出しても除外するフィルター
-    const allTags = allPosts.map((post) => post.data.tags || []).flat();
-    const uniqueTags = [...new Set(allTags)].filter(tag => tag && typeof tag === 'string');
+    // タグを収集
+    const uniqueTags = [...new Set(allPosts.flatMap((post) => post.data.tags || []))];
 
     return uniqueTags.map((tag) => {
-        const filteredPosts = allPosts.filter((post) => post.data.tags?.includes(tag));
+        const filteredPosts = allPosts.filter((post) => 
+            (post.data.tags || []).includes(tag)
+        ).sort(
+            (a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0)
+        );
+
         return {
-            params: { tag: tag.toLowerCase() },
-            props: { tag, posts: filteredPosts },
+            params: { tag: tag },
+            props: { posts: filteredPosts },
         };
     });
 }
@@ -27,34 +30,31 @@ const { tag } = Astro.params;
 const { posts } = Astro.props;
 ---
 
-<BaseLayout title={`Archive: ${tag.toUpperCase()} - FLUCTUATION`}>
-    
-    <TopicScroller />
-
-    <main class="w-full min-h-screen bg-[#FDFDFD] text-[#0A0A0A] pb-48 selection:bg-[#D4AF37] selection:text-white">
+<BaseLayout title={`Tag: ${tag}`} description={`Articles regarding ${tag}`}>
+    <Header />
+    <main class="w-full max-w-4xl mx-auto px-6 py-24 bg-[#FDFDFD]">
+        <h1 class="text-3xl font-serif font-bold mb-12 border-b pb-4">
+            Tag: <span class="text-[#D4AF37]">#{tag}</span>
+        </h1>
         
-        <section class="pt-48 px-[10vw] mb-32 max-w-[1600px] mx-auto">
-            <div class="flex flex-col items-start">
-                <div class="flex items-center gap-4 mb-6">
-                    <span class="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse"></span>
-                    <h2 class="text-[10px] font-mono tracking-[0.4em] text-gray-400 uppercase">Filtered Archive</h2>
-                </div>
-                
-                <h1 class="text-6xl md:text-8xl lg:text-[10rem] font-serif font-light text-black leading-none tracking-tighter uppercase">
-                    {tag}
-                </h1>
-                <p class="mt-12 text-sm md:text-base font-sans font-light text-gray-500 max-w-xl border-l border-black/10 pl-6">
-                    「{tag}」に関する知の集積。<br>
-                    {posts.length}件のレコードが見つかりました。
-                </p>
-            </div>
-        </section>
-
-        <section class="px-[5vw] md:px-[10vw] max-w-[1600px] mx-auto flex flex-col">
-            {posts.map((post, index) => (
-                <ArticleCard post={post} index={index} />
-            ))}
-        </section>
-
+        <ul class="space-y-8">
+            {
+                posts.map((post) => (
+                    <li class="border-b border-black/10 pb-4">
+                        <a href={`/blog/${post.slug}/`} class="block group">
+                            <h3 class="text-xl font-serif text-gray-900 group-hover:text-[#D4AF37] transition-colors">{post.data.title || 'Untitled'}</h3>
+                            <p class="text-sm font-mono text-gray-400 mt-2">
+                                {post.data.date ? <FormattedDate date={post.data.date} /> : ''}
+                            </p>
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+        
+        <div class="mt-12">
+            <a href="/" class="text-sm font-mono tracking-widest text-gray-400 hover:text-black transition-colors uppercase">← Back to Home</a>
+        </div>
     </main>
+    <Footer />
 </BaseLayout>

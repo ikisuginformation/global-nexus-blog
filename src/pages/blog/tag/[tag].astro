@@ -1,59 +1,62 @@
 ---
 import { getCollection } from 'astro:content';
-// パスを ../../../ (3階層上) に修正
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import FormattedDate from '../../../components/FormattedDate.astro';
 
 export async function getStaticPaths() {
-	const allPosts = await getCollection('blog');
-	
-	// タグを収集（重複排除・空タグ排除）
-	const uniqueTags = [...new Set(allPosts.map((post) => post.data.tags || []).flat())];
+    const allPosts = await getCollection('blog');
+    
+    // 全てのタグを収集し、重複を排除
+    const uniqueTags = [...new Set(allPosts.flatMap((post) => post.data.tags || []))];
 
-	return uniqueTags.map((tag) => {
-		// そのタグを含む記事だけをフィルタリング
-		const filteredPosts = allPosts.filter((post) => 
-			(post.data.tags || []).includes(tag)
-		).sort(
-			(a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0)
-		);
+    return uniqueTags.map((tag) => {
+        // 対象のタグを含む記事だけをフィルタリングし、日付順にソート
+        const filteredPosts = allPosts.filter((post) => 
+            (post.data.tags || []).includes(tag)
+        ).sort(
+            (a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0)
+        );
 
-		return {
-			params: { tag },
-			props: { posts: filteredPosts },
-		};
-	});
+        return {
+            // ★重要：URLパラメータを小文字に強制統一し、大文字小文字による404を防ぐ
+            params: { tag: tag.toLowerCase() },
+            // 表示用の元のタグ名は props として渡す
+            props: { originalTag: tag, posts: filteredPosts },
+        };
+    });
 }
 
 const { tag } = Astro.params;
-const { posts } = Astro.props;
+const { originalTag, posts } = Astro.props;
 ---
 
-<BaseLayout title={`Posts tagged with ${tag}`} description={`Articles regarding ${tag}`}>
-	<Header />
-	<main style="max-width: 960px; margin: 0 auto; padding: 2rem;">
-		<h1 style="margin-bottom: 2rem; font-size: 2rem;">Tag: <span style="color: #d946ef;">#{tag}</span></h1>
-		
-		<ul style="list-style: none; padding: 0;">
-			{
-				posts.map((post) => (
-					<li style="margin-bottom: 2rem; border-bottom: 1px solid #eee; padding-bottom: 1rem;">
-						<a href={`/blog/${post.slug}/`} style="text-decoration: none; display: block;">
-							<h3 style="margin: 0; color: #333; font-size: 1.5rem;">{post.data.title || 'Untitled'}</h3>
-							<p style="margin: 0.5rem 0; color: #666;">
-								{post.data.date ? <FormattedDate date={post.data.date} /> : ''}
-							</p>
-						</a>
-					</li>
-				))
-			}
-		</ul>
-		
-		<div style="margin-top: 3rem;">
-			<a href="/blog" style="color: #666; text-decoration: underline;">← Back to all articles</a>
-		</div>
-	</main>
-	<Footer />
+<BaseLayout title={`Tag: ${originalTag} | Global Nexus Blog`} description={`Articles regarding ${originalTag}`}>
+    <Header />
+    <main class="w-full max-w-4xl mx-auto px-6 py-24 bg-[#FDFDFD]">
+        <h1 class="text-3xl font-serif font-bold mb-12 border-b pb-4">
+            Tag: <span class="text-blue-600">#{originalTag}</span>
+        </h1>
+        
+        <ul class="space-y-8">
+            {
+                posts.map((post) => (
+                    <li class="border-b pb-4">
+                        <a href={`/blog/${post.slug}/`} class="block hover:text-blue-600 transition-colors">
+                            <h3 class="text-xl font-bold text-gray-900">{post.data.title || 'Untitled'}</h3>
+                            <p class="text-sm text-gray-500 mt-2">
+                                {post.data.date ? <FormattedDate date={post.data.date} /> : ''}
+                            </p>
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+        
+        <div class="mt-12">
+            <a href="/" class="text-gray-600 hover:underline">← Back to Home</a>
+        </div>
+    </main>
+    <Footer />
 </BaseLayout>
