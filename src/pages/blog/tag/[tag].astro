@@ -1,60 +1,58 @@
 ---
-// src/pages/blog/tag/[tag].astro
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import ArticleCard from '../../../components/ArticleCard.astro';
-import TopicScroller from '../../../components/TopicScroller.astro';
 import { getCollection } from 'astro:content';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import FormattedDate from '../../../../components/FormattedDate.astro';
 
 export async function getStaticPaths() {
-  const allPosts = await getCollection('blog');
-  const uniqueTags = [...new Set(allPosts.map((post) => post.data.tags || []).flat())];
+	const allPosts = await getCollection('blog');
+	
+	// タグを収集（重複排除・空タグ排除）
+	const uniqueTags = [...new Set(allPosts.map((post) => post.data.tags || []).flat())];
 
-  return uniqueTags.map((tag) => {
-    const filteredPosts = allPosts.filter((post) => post.data.tags?.includes(tag))
-      .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-    
-    return {
-      // URLを安全な形式（小文字・ハイフン）に変換
-      params: { tag: tag.toLowerCase().replace(/\s+/g, '-') },
-      props: { posts: filteredPosts, tagName: tag },
-    };
-  });
+	return uniqueTags.map((tag) => {
+		// そのタグを含む記事だけをフィルタリング
+		const filteredPosts = allPosts.filter((post) => 
+			(post.data.tags || []).includes(tag)
+		).sort(
+			(a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0)
+		);
+
+		return {
+			params: { tag },
+			props: { posts: filteredPosts },
+		};
+	});
 }
 
 const { tag } = Astro.params;
-const { posts, tagName } = Astro.props;
+const { posts } = Astro.props;
 ---
 
-<BaseLayout title={`${tagName} | Fluctuation`} description={`Archive of ${tagName}`}>
-    <TopicScroller />
-
-    <main class="w-full min-h-screen bg-[#FDFDFD] pt-[25vh] pb-48 selection:bg-[#0A0A0A] selection:text-white">
-        <div class="max-w-[1600px] mx-auto px-[10vw]">
-            
-            <header class="mb-32">
-                <p class="text-[10px] font-mono tracking-[0.3em] text-gray-400 uppercase mb-4 border-l border-black/10 pl-4">
-                    Intelligence Archive / Tag
-                </p>
-                <h1 class="text-5xl md:text-7xl font-serif font-light tracking-tighter text-[#0A0A0A] uppercase max-w-4xl">
-                    {tagName}
-                </h1>
-                <p class="mt-8 text-sm text-gray-500">
-                    {posts.length} insights accumulated.
-                </p>
-            </header>
-            
-            <div class="flex flex-col gap-y-24 w-full">
-                {posts.map((post, index) => {
-                    const isLeft = index % 2 === 0;
-                    const alignmentClass = isLeft ? 'self-start md:ml-[5vw]' : 'self-end md:mr-[5vw]';
-                    return (
-                        <div class={`w-full md:w-[45vw] ${alignmentClass} transition-transform duration-1000 ease-out hover:-translate-y-2`}>
-                            <ArticleCard post={post} />
-                        </div>
-                    );
-                })}
-            </div>
-
-        </div>
-    </main>
+<BaseLayout title={`Posts tagged with ${tag}`} description={`Articles regarding ${tag}`}>
+	<Header />
+	<main style="max-width: 960px; margin: 0 auto; padding: 2rem;">
+		<h1 style="margin-bottom: 2rem; font-size: 2rem;">Tag: <span style="color: #d946ef;">#{tag}</span></h1>
+		
+		<ul style="list-style: none; padding: 0;">
+			{
+				posts.map((post) => (
+					<li style="margin-bottom: 2rem; border-bottom: 1px solid #eee; padding-bottom: 1rem;">
+						<a href={`/blog/${post.slug}/`} style="text-decoration: none; display: block;">
+							<h3 style="margin: 0; color: #333; font-size: 1.5rem;">{post.data.title || 'Untitled'}</h3>
+							<p style="margin: 0.5rem 0; color: #666;">
+								{post.data.date ? <FormattedDate date={post.data.date} /> : ''}
+							</p>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+		
+		<div style="margin-top: 3rem;">
+			<a href="/blog" style="color: #666; text-decoration: underline;">← Back to all articles</a>
+		</div>
+	</main>
+	<Footer />
 </BaseLayout>
