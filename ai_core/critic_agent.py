@@ -21,9 +21,9 @@ class CriticAgent:
             state.critic_feedback = "タイトルまたは本文が空です。"
             return state
 
-        if len(state.title) > 60:
+        if len(state.title) > 100:
             state.is_approved = False
-            state.critic_feedback = f"タイトルが長すぎます（現在{len(state.title)}文字）。Googleの検索結果で省略されないよう、40文字以内に短縮してください。"
+            state.critic_feedback = f"タイトルが長すぎます（現在{len(state.title)}文字）。100文字以内に短縮してください。"
             return state
 
         if len(state.description) > 160:
