@@ -15,7 +15,7 @@ const { post, index = 0 } = Astro.props;
 const serialNumber = String(index + 1).padStart(3, '0');
 ---
 
-<a href={`/blog/${post.slug}/`} class="group block relative w-full border-t border-black/10 pt-8 pb-12 transition-all duration-700 hover:border-black">
+<a href={`/blog/${post.slug}/`} class="group block relative w-full border-t border-black/10 pt-8 pb-12 transition-all duration-700 hover:border-black transform-gpu hover:scale-[1.012] origin-left will-change-transform">
     
     <div class="flex flex-col xl:flex-row items-start xl:items-baseline gap-6 xl:gap-16">
         
@@ -30,7 +30,7 @@ const serialNumber = String(index + 1).padStart(3, '0');
                 <span>{post.data.language || 'GLOBAL'}</span>
             </div>
             
-            <h3 class="text-3xl md:text-5xl lg:text-6xl font-serif font-light text-[#0A0A0A] group-hover:italic transition-all duration-500 leading-[1.1] tracking-tighter">
+            <h3 class="text-3xl md:text-5xl lg:text-6xl font-serif font-light text-[#0A0A0A] group-hover:italic group-hover:font-bold transition-all duration-500 leading-[1.1] tracking-tighter">
                 {post.data.title}
             </h3>
             

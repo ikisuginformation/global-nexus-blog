@@ -36,32 +36,115 @@ const {
 
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,900&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
 		<style is:global>
-			/* フォントファミリーの強制上書き */
 			:root {
-				--font-serif: 'Cormorant Garamond', 'Shippori Mincho', serif;
+				--font-serif: 'Playfair Display', 'Cormorant Garamond', 'Shippori Mincho', serif;
 				--font-mono: 'Space Mono', monospace;
-				--font-sans: 'Helvetica Neue', Arial, sans-serif;
+				--font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
 			}
-			
+
 			body {
 				font-family: var(--font-sans);
-				background-color: #FDFDFD; /* 白練 */
-				color: #0A0A0A; /* 漆黒 */
+				background-color: #FDFDFD;
+				color: #0A0A0A;
+				font-size: 17px;
+				line-height: 1.75;
 			}
-			
-			/* クラスで呼び出せるように設定 */
+
 			.font-serif { font-family: var(--font-serif); }
 			.font-mono { font-family: var(--font-mono); }
 			.font-sans { font-family: var(--font-sans); }
+
+			/* ── Ultra-minimalist prose typography ── */
+			.prose h2 {
+				font-family: var(--font-serif) !important;
+				font-size: clamp(2rem, 4vw, 3rem) !important;
+				font-weight: 800 !important;
+				letter-spacing: -0.03em;
+				line-height: 1.1;
+				margin-top: 4.5rem;
+				margin-bottom: 1.5rem;
+				color: #0A0A0A;
+			}
+
+			.prose h3 {
+				font-family: var(--font-serif) !important;
+				font-size: clamp(1.35rem, 2.5vw, 1.875rem) !important;
+				font-weight: 700 !important;
+				letter-spacing: -0.02em;
+				line-height: 1.2;
+				margin-top: 3.5rem;
+				margin-bottom: 1rem;
+				color: #0A0A0A;
+			}
+
+			.prose h4 {
+				font-family: var(--font-serif) !important;
+				font-weight: 700 !important;
+				letter-spacing: -0.01em;
+			}
+
+			/* Generous negative space for prose paragraphs */
+			.prose p {
+				line-height: 1.95 !important;
+				margin-bottom: 2rem !important;
+			}
+
+			/* Bionic bold markers — no extra styling needed beyond weight */
+			.prose p b {
+				font-weight: 800;
+			}
 		</style>
 	</head>
 	
     <body class="antialiased selection:bg-[#D4AF37] selection:text-white">
         <SearchOverlay />
-        
+
         <slot />
+
+		<!-- Bionic Reading Protocol -->
+		<script is:inline>
+			(function () {
+				function applyBionicReading() {
+					var paragraphs = document.querySelectorAll('.prose p');
+					paragraphs.forEach(function (p) {
+						if (p.closest('pre') || p.dataset.bionic) return;
+						p.dataset.bionic = '1';
+
+						var walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null);
+						var nodes = [];
+						var n;
+						while ((n = walker.nextNode())) {
+							if (!n.parentElement.closest('code, pre')) nodes.push(n);
+						}
+
+						nodes.forEach(function (node) {
+							var parts = node.textContent.split(/(\s+)/);
+							var frag = document.createDocumentFragment();
+							parts.forEach(function (part) {
+								if (/\s/.test(part) || part.length <= 3) {
+									frag.appendChild(document.createTextNode(part));
+								} else {
+									var half = Math.ceil(part.length / 2);
+									var b = document.createElement('b');
+									b.textContent = part.slice(0, half);
+									frag.appendChild(b);
+									frag.appendChild(document.createTextNode(part.slice(half)));
+								}
+							});
+							node.parentNode.replaceChild(frag, node);
+						});
+					});
+				}
+
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', applyBionicReading);
+				} else {
+					applyBionicReading();
+				}
+			})();
+		</script>
 	</body>
 </html>
