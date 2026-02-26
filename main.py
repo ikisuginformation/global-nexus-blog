@@ -18,7 +18,7 @@ def main():
     # None にすれば「全自動マイニングモード（Trendsから取得）」
     # 文字列を入れれば「そのテーマ周辺のニッチ発掘モード」
     # 例: USER_SEED_TOPIC = "deep sea mining" 
-    USER_SEED_TOPIC = "AI agent" 
+    USER_SEED_TOPIC = "Best crypto exchange for beginners 2026"
     
     TARGET_LANGUAGES = ["en", "ja", "es"]
     
