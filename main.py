@@ -1,6 +1,7 @@
 # main.py
 import time
 import random
+import json
 from ai_core.orchestrator import Orchestrator
 from ai_core.director_agent import DirectorAgent
 from ai_core.publisher_agent import PublisherAgent
@@ -9,26 +10,26 @@ def main():
     print("==================================================")
     print(" GLOBAL NEXUS: Autonomous Mining & Production v3.0")
     print("==================================================")
-    
+
     director = DirectorAgent()
     orchestrator = Orchestrator()
     publisher = PublisherAgent()
-    
+
     # ▼ 設定エリア ▼
-    # None にすれば「全自動マイニングモード（Trendsから取得）」
-    # 文字列を入れれば「そのテーマ周辺のニッチ発掘モード」
-    # 例: USER_SEED_TOPIC = "deep sea mining" 
-    USER_SEED_TOPIC = "Best crypto exchange for beginners 2026"
-    
+    with open("ai_core/topics_database.json", "r", encoding="utf-8") as f:
+        topics_data = json.load(f)
+
     TARGET_LANGUAGES = ["en", "ja", "es"]
-    
+
     iteration = 1
-    
+
     while True:
         print(f"\n[System] Mining Cycle {iteration} Initiated...")
-        
-        # 1. Directorによる市場調査と戦略立案
-        strategies = director.discover_targets(seed_topic=USER_SEED_TOPIC)
+
+        # 1. Director Agentによるトピック自動選択と戦略立案
+        seed_topic = random.choice(topics_data["topics"])
+        print(f"[Director Agent] Selected topic: {seed_topic}")
+        strategies = director.discover_targets(seed_topic=seed_topic)
         
         if not strategies:
             print("[System] 有望なニッチが見つかりませんでした。条件を変えて再試行します...")
