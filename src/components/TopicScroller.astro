@@ -1,6 +1,18 @@
 ---
 // src/components/TopicScroller.astro
-// 目次（INDEX）と検索ボタン（機能付き）
+import { getCollection } from 'astro:content';
+
+// 実際に存在する記事からタグを抽出し、使用回数が多い上位3つを取得する自動化ロジック
+const allPosts = await getCollection('blog');
+const allTags = allPosts.flatMap(post => post.data.tags || []);
+const tagCounts = allTags.reduce((acc, tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+    return acc;
+}, {} as Record<string, number>);
+
+const topTags = Object.keys(tagCounts)
+    .sort((a, b) => tagCounts[b] - tagCounts[a])
+    .slice(0, 3);
 ---
 
 <div class="w-full border-b border-black/10 bg-[#FDFDFD]/90 backdrop-blur-md sticky top-0 z-50 transition-all duration-500">
@@ -8,9 +20,7 @@
         
         <div class="flex items-center gap-4">
             <span class="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse"></span>
-            <span class="text-[9px] font-mono tracking-[0.4em] uppercase text-black">
-                Archive Index
-            </span>
+            <span class="text-[9px] font-mono tracking-[0.4em] uppercase text-black">Archive Index</span>
         </div>
 
         <nav class="hidden md:flex items-center gap-12 text-[10px] font-mono tracking-[0.2em] uppercase text-gray-400">
@@ -18,33 +28,27 @@
                 All
                 <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-100 transition-transform duration-300"></span>
             </a>
-            <a href="/blog/tag/Crypto" class="hover:text-black relative group transition-colors">
-                Crypto
-                <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
-            </a>
-            <a href="/blog/tag/Web3" class="hover:text-black relative group transition-colors">
-                Web3
-                <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
-            </a>
-            <a href="/blog/tag/SaaS" class="hover:text-black relative group transition-colors">
-                SaaS
-                <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
-            </a>
+            
+            {/* 動的にTOP3のタグリンクを生成 */}
+            {topTags.map((tag) => {
+                const safeSlug = tag.toLowerCase().replace(/\s+/g, '-');
+                return (
+                    <a href={`/blog/tag/${safeSlug}`} class="hover:text-black relative group transition-colors">
+                        {tag}
+                        <span class="absolute -bottom-2 left-0 w-full h-[1px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+                    </a>
+                );
+            })}
         </nav>
 
         <div class="flex items-center gap-6">
             <button class="open-search-btn flex items-center gap-2 group cursor-pointer hover:text-black" aria-label="Search">
-                <span class="text-[9px] font-mono tracking-[0.2em] uppercase text-gray-400 group-hover:text-black transition-colors hidden md:block">
-                    Search
-                </span>
+                <span class="text-[9px] font-mono tracking-[0.2em] uppercase text-gray-400 group-hover:text-black transition-colors hidden md:block">Search</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-black transition-transform group-hover:scale-110">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
             </button>
-
-            <button class="md:hidden text-[9px] font-mono tracking-[0.3em] uppercase text-black">
-                Menu +
-            </button>
+            <button class="md:hidden text-[9px] font-mono tracking-[0.3em] uppercase text-black">Menu +</button>
         </div>
 
     </div>
