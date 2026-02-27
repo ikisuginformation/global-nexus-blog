@@ -1,42 +1,41 @@
 ---
 // src/components/ArticleCard.astro
-// "Gallery Plaque" - 美術館の作品キャプションのような極限の引き算レイアウト
+// "Gallery Plaque" — Urushi edition: deep lacquer with vermilion & gold accents
 
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
     post: CollectionEntry<'blog'>;
-    index?: number; // インデックス番号を受け取る
+    index?: number;
 }
 
 const { post, index = 0 } = Astro.props;
-// 001, 002... のように3桁のシリアルナンバー化
 const serialNumber = String(index + 1).padStart(3, '0');
 ---
 
-<a href={`/blog/${post.slug}/`} class="group block relative w-full border-t border-black/10 pt-8 pb-12 transition-all duration-700 hover:border-black transform-gpu hover:scale-[1.012] origin-left will-change-transform">
-    
+<a href={`/blog/${post.slug}/`} class="group block relative w-full border-t border-[#d4af37]/15 pt-8 pb-12 transition-all duration-700 hover:border-[#d4af37]/40 transform-gpu hover:scale-[1.012] origin-left will-change-transform">
+
     <div class="flex flex-col xl:flex-row items-start xl:items-baseline gap-6 xl:gap-16">
-        
-        <span class="text-xs font-mono text-gray-300 group-hover:text-[#D4AF37] transition-colors shrink-0">
+
+        <span class="text-xs font-mono text-[#9a7a5a] group-hover:text-[#d4af37] transition-colors shrink-0">
             Nº {serialNumber}
         </span>
-        
+
         <div class="flex-grow w-full">
-            <div class="flex items-center gap-4 text-[9px] font-mono tracking-[0.3em] text-gray-400 uppercase mb-6 group-hover:text-gray-600 transition-colors">
+            <div class="flex items-center gap-4 text-[9px] font-mono tracking-[0.3em] text-[#7a5a3a] uppercase mb-6 group-hover:text-[#9a7a5a] transition-colors">
                 <FormattedDate date={post.data.date} />
-                <span class="w-8 h-[1px] bg-gray-300 group-hover:bg-[#D4AF37] transition-colors"></span>
+                <span class="w-8 h-[1px] bg-[#6a4a2a] group-hover:bg-[#d4af37] transition-colors"></span>
                 <span>{post.data.language || 'GLOBAL'}</span>
             </div>
-            
-            <h3 class="text-3xl md:text-5xl lg:text-6xl font-serif font-light text-[#0A0A0A] group-hover:italic group-hover:font-bold transition-all duration-500 leading-[1.1] tracking-tighter">
+
+            <h3 class="text-3xl md:text-5xl lg:text-6xl font-serif font-light text-[#f0e8d8] group-hover:italic group-hover:font-bold transition-all duration-500 leading-[1.1] tracking-tighter">
                 {post.data.title}
             </h3>
-            
+
             <div class="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
                 <div class="overflow-hidden">
-                    <p class="mt-8 text-sm md:text-base text-gray-500 font-sans leading-relaxed max-w-2xl border-l border-black/20 pl-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 delay-100">
+                    <p class="mt-8 text-sm md:text-base text-[#c4a882] font-sans leading-relaxed max-w-2xl border-l border-[#d9381e]/30 pl-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 delay-100">
                         {post.data.description}
                     </p>
                 </div>
@@ -44,10 +43,10 @@ const serialNumber = String(index + 1).padStart(3, '0');
         </div>
 
         <div class="shrink-0 opacity-0 -translate-x-8 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-700 ease-out hidden md:block">
-            <span class="text-[9px] font-mono tracking-[0.2em] uppercase text-[#D4AF37] rotate-90 origin-left block transform translate-y-8">
+            <span class="text-[9px] font-mono tracking-[0.2em] uppercase text-[#d4af37] rotate-90 origin-left block transform translate-y-8">
                 Read
             </span>
-            <div class="w-[1px] h-12 bg-[#D4AF37] mt-2"></div>
+            <div class="w-[1px] h-12 bg-[#d4af37] mt-2"></div>
         </div>
 
     </div>

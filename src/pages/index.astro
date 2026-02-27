@@ -1,38 +1,25 @@
 ---
 // src/pages/index.astro
 import BaseLayout from '../layouts/BaseLayout.astro';
-import GenerativeHero from '../components/GenerativeHero.astro';
-import TopicScroller from '../components/TopicScroller.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import { getCollection } from 'astro:content';
 
 const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.date.valueOf() - a.data.date.valueOf()
-).slice(0, 8);
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
 ---
 
-<BaseLayout>
-    <GenerativeHero />
-    
-    <TopicScroller />
+<BaseLayout title="Global Nexus">
+  <header class="site-header">
+    <p class="eyebrow">Est. MMXXIV</p>
+    <h1>Into the Abyss</h1>
+  </header>
 
-    <main class="w-full relative z-20 pb-48 bg-[#FDFDFD] mt-[100vh] shadow-2xl">
-        
-        <section class="pt-32 px-[10vw] mb-24 max-w-[1600px] mx-auto">
-            <div class="flex flex-col items-start">
-                <h2 class="text-[10px] font-mono tracking-[0.4em] text-gray-400 mb-6 uppercase">Archive Stream</h2>
-                <p class="text-xl md:text-2xl font-serif font-light text-black/80 max-w-2xl leading-relaxed">
-                    思考の断片。時間の流れに沿って蓄積された、<br>
-                    静寂と知性のアーカイブ。
-                </p>
-            </div>
-        </section>
+  <hr class="glow-rule" />
 
-        <section class="px-[5vw] md:px-[10vw] max-w-[1600px] mx-auto flex flex-col">
-            {posts.map((post, index) => (
-                <ArticleCard post={post} index={index} />
-            ))}
-        </section>
-
-    </main>
+  <div class="article-grid">
+    {posts.map((post, i) => (
+      <ArticleCard post={post} index={i} />
+    ))}
+  </div>
 </BaseLayout>

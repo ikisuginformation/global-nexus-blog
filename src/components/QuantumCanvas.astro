@@ -1,0 +1,387 @@
+---
+// QuantumCanvas.astro
+// Full-screen WebGL background — infinite non-Euclidean optical illusion
+// Raymarched hyperbolic space with liquid glass distortion, mouse parallax
+---
+
+<canvas id="quantum-canvas"></canvas>
+
+<script>
+  import * as THREE from 'three';
+
+  // ─── Vertex Shader ───────────────────────────────────────────────────────────
+  const vertexShader = /* glsl */`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = vec4(position, 1.0);
+    }
+  `;
+
+  // ─── Fragment Shader ─────────────────────────────────────────────────────────
+  // Architecture:
+  //  • Domain-repeated SDF of a hyperbolic "void lattice"
+  //  • Raymarched fog accumulation for volumetric depth
+  //  • Fbm noise for liquid-glass surface distortion
+  //  • Mouse warps the ray origin (parallax trompe-l'œil)
+  //  • Time-driven peristaltic tunnel breathing
+  const fragmentShader = /* glsl */`
+    precision highp float;
+
+    uniform float u_time;
+    uniform vec2  u_mouse;      // normalized [0,1]
+    uniform vec2  u_resolution;
+
+    varying vec2 vUv;
+
+    // ── Constants ────────────────────────────────────────────────────────────
+    #define PI   3.14159265358979
+    #define TAU  6.28318530717959
+    #define MAX_STEPS 96
+    #define MAX_DIST  40.0
+    #define SURF_DIST 0.003
+
+    // ── Hash / Noise ─────────────────────────────────────────────────────────
+    float hash(vec2 p) {
+      p = fract(p * vec2(127.1, 311.7));
+      p += dot(p, p + 19.31);
+      return fract(p.x * p.y);
+    }
+
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(hash(i + vec2(0,0)), hash(i + vec2(1,0)), u.x),
+        mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), u.x),
+        u.y
+      );
+    }
+
+    // Fractional Brownian Motion — 5 octaves
+    float fbm(vec2 p) {
+      float v = 0.0, a = 0.5;
+      mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+      for (int i = 0; i < 5; i++) {
+        v += a * noise(p);
+        p  = rot * p * 2.1 + vec2(1.7, 9.2);
+        a *= 0.5;
+      }
+      return v;
+    }
+
+    // 3-D value noise
+    float noise3(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      vec3 u = f*f*(3.0-2.0*f);
+      float a = hash(i.xy + i.z * 17.0);
+      float b = hash(i.xy + vec2(1,0) + i.z * 17.0);
+      float c = hash(i.xy + vec2(0,1) + i.z * 17.0);
+      float d = hash(i.xy + vec2(1,1) + i.z * 17.0);
+      float e = hash(i.xy + (i.z+1.0) * 17.0);
+      float f2= hash(i.xy + vec2(1,0) + (i.z+1.0) * 17.0);
+      float g = hash(i.xy + vec2(0,1) + (i.z+1.0) * 17.0);
+      float h = hash(i.xy + vec2(1,1) + (i.z+1.0) * 17.0);
+      return mix(
+        mix(mix(a,b,u.x), mix(c,d,u.x), u.y),
+        mix(mix(e,f2,u.x), mix(g,h,u.x), u.y),
+        u.z
+      );
+    }
+
+    // ── SDF Primitives ───────────────────────────────────────────────────────
+
+    // Infinite torus knot lattice — the core optical illusion
+    float sdTorusKnot(vec3 p, float t) {
+      // Fold space periodically — creates infinite repetition
+      p.z = mod(p.z + t * 0.18, 4.0) - 2.0;
+
+      // Liquid breathing: fbm displacement on xy slice
+      float disp = fbm(p.xy * 0.8 + t * 0.07) * 0.45;
+
+      float r1 = 1.1 + sin(p.z * PI * 0.5) * 0.25;
+      float r2 = 0.22 + disp * 0.3;
+
+      vec2 q = vec2(length(p.xz) - r1, p.y);
+      return length(q) - r2;
+    }
+
+    // Pulsing void orbs — drifting spheres that warp local space
+    float sdVoidOrbs(vec3 p, float t) {
+      float d = 1e9;
+      for (int k = 0; k < 5; k++) {
+        float fk = float(k);
+        float angle = fk * TAU / 5.0 + t * (0.06 + fk * 0.013);
+        float radius = 2.2 + sin(t * 0.11 + fk * 1.3) * 0.6;
+        float depth  = sin(t * 0.07 + fk * 2.1) * 8.0;
+        vec3 center  = vec3(cos(angle)*radius, sin(angle)*radius*0.5, depth);
+        float pulse  = 0.18 + 0.06 * sin(t * 0.4 + fk * 0.7);
+        d = min(d, length(p - center) - pulse);
+      }
+      return d;
+    }
+
+    // Hyperbolic grid planes — the "glass lattice" feel
+    float sdHyperbolicGrid(vec3 p, float t) {
+      // Repeat the planes in all three axes
+      vec3 q = abs(fract(p * 0.5 + 0.5) - 0.5) / 0.5;
+      float planes = min(min(q.x, q.y), q.z);
+
+      // Warp with fbm so it flows like liquid glass
+      float warp = fbm(p.xy * 0.6 + t * 0.04) * 0.5;
+      return planes - 0.025 - warp * 0.02;
+    }
+
+    // Master scene SDF — smooth-union of all elements
+    float smin(float a, float b, float k) {
+      float h = clamp(0.5 + 0.5*(b-a)/k, 0.0, 1.0);
+      return mix(b, a, h) - k*h*(1.0-h);
+    }
+
+    float sceneSDF(vec3 p, float t) {
+      float tk   = sdTorusKnot(p, t);
+      float orbs = sdVoidOrbs(p, t);
+      float grid = sdHyperbolicGrid(p * 0.5, t) * 2.0; // scale back
+      return smin(smin(tk, orbs, 0.6), grid, 0.4);
+    }
+
+    // ── Normal estimation ────────────────────────────────────────────────────
+    vec3 calcNormal(vec3 p, float t) {
+      vec2 e = vec2(0.001, 0.0);
+      return normalize(vec3(
+        sceneSDF(p + e.xyy, t) - sceneSDF(p - e.xyy, t),
+        sceneSDF(p + e.yxy, t) - sceneSDF(p - e.yxy, t),
+        sceneSDF(p + e.yyx, t) - sceneSDF(p - e.yyx, t)
+      ));
+    }
+
+    // ── Raymarcher ───────────────────────────────────────────────────────────
+    struct March {
+      float dist;
+      float steps;
+      float minDist;
+      float fog;
+    };
+
+    March raymarch(vec3 ro, vec3 rd, float t) {
+      float dist = 0.0;
+      float minD = 1e9;
+      float fog  = 0.0;
+
+      for (int i = 0; i < MAX_STEPS; i++) {
+        vec3  p = ro + rd * dist;
+        float d = sceneSDF(p, t);
+
+        minD = min(minD, d);
+
+        // Volumetric fog accumulation — deeper rays glow more
+        fog += exp(-max(d, 0.0) * 8.0) * 0.018;
+
+        if (d < SURF_DIST) break;
+        if (dist > MAX_DIST) break;
+
+        // Adaptive step — slow down near surfaces for smooth glow
+        dist += d * 0.72;
+      }
+
+      March m;
+      m.dist    = dist;
+      m.steps   = 0.0;
+      m.minDist = minD;
+      m.fog     = clamp(fog, 0.0, 1.0);
+      return m;
+    }
+
+    // ── Colour palette ───────────────────────────────────────────────────────
+    // cosine palette — Urushi lacquer: profound abyss black cycling through
+    // rich vermilion (#d9381e) with the deeper oscillations touching crimson
+    vec3 palette(float t) {
+      vec3 a = vec3(0.30, 0.04, 0.02);  // warm dark midpoint — deep lacquer red
+      vec3 b = vec3(0.28, 0.06, 0.02);  // amplitude — heavy red, minimal green/blue
+      vec3 c = vec3(1.0,  1.8,  2.5);   // green/blue cycle faster → occasional warmth
+      vec3 d = vec3(0.0,  0.25, 0.50);  // phase offsets for organic colour spread
+      return a + b * cos(TAU * (c * t + d));
+    }
+
+    // Accent glow: brushed gold / brass dust (#d4af37)
+    vec3 accentGlow(float t) {
+      vec3 a = vec3(0.12, 0.08, 0.01);  // dark amber base
+      vec3 b = vec3(0.20, 0.15, 0.04);  // gold amplitude
+      vec3 c = vec3(1.0,  0.8,  0.6);   // coherent frequencies for warm unity
+      vec3 d = vec3(0.0,  0.10, 0.30);  // slight phase for subtle hue drift
+      return a + b * cos(TAU * (c * t + d));
+    }
+
+    // ── Main ─────────────────────────────────────────────────────────────────
+    void main() {
+      vec2 uv = (vUv - 0.5) * vec2(u_resolution.x / u_resolution.y, 1.0);
+
+      float t = u_time * 0.42;
+
+      // Mouse parallax — offset ray origin for trompe-l'œil
+      vec2 mouse = (u_mouse - 0.5) * 2.0;          // [-1, 1]
+      float mouseLen = length(mouse);
+
+      // Slow, weighted mouse influence — profound but not jittery
+      vec3 ro = vec3(
+        mouse.x * 0.55,
+        mouse.y * 0.35,
+        -5.5 + sin(t * 0.15) * 0.4               // slow approach / retreat
+      );
+
+      // Ray direction — slight fisheye for infinite-depth illusion
+      vec3 rd = normalize(vec3(uv * 1.05, 1.0));
+
+      // Mouse warps the ray direction too (subtle spatial warp)
+      rd.xy += mouse * 0.04;
+      rd  = normalize(rd);
+
+      // ── FBM pre-warp on UV — "liquid glass" lens distortion ────────────────
+      float lensWarp = fbm(uv * 2.5 + t * 0.06) * 0.12;
+      uv += (uv * lensWarp);
+
+      // ── March ─────────────────────────────────────────────────────────────
+      March m = raymarch(ro, rd, t);
+
+      // ── Surface shading ───────────────────────────────────────────────────
+      vec3 col = vec3(0.0);
+
+      if (m.dist < MAX_DIST) {
+        vec3  p   = ro + rd * m.dist;
+        vec3  nor = calcNormal(p, t);
+
+        // Diffuse from a slow orbiting light
+        float lightAngle = t * 0.25;
+        vec3  ld  = normalize(vec3(cos(lightAngle)*2.0, 1.5, sin(lightAngle)*2.0));
+        float diff = clamp(dot(nor, ld), 0.0, 1.0);
+
+        // Fresnel rim for the glass edge glow
+        float fres = pow(1.0 - abs(dot(nor, -rd)), 3.5);
+
+        // Position-based palette — driven by depth + fbm
+        float depthT = m.dist / MAX_DIST;
+        float noiseT = fbm(p.xy * 1.1 + t * 0.05);
+        vec3  surfCol = palette(depthT * 0.7 + noiseT * 0.5 + t * 0.04);
+
+        // Specular flicker
+        vec3  h    = normalize(ld - rd);
+        float spec = pow(clamp(dot(nor, h), 0.0, 1.0), 64.0) * 0.6;
+
+        col = surfCol * (0.06 + diff * 0.35)
+            + accentGlow(fres + t * 0.03) * fres * 1.2
+            + vec3(0.83, 0.69, 0.22) * spec;  // brushed gold specular (#d4af37)
+      }
+
+      // ── Volumetric fog glow — always present, deepens abyss ───────────────
+      float fogT = fbm(uv * 1.5 + t * 0.035) * 0.5 + 0.5;
+      vec3 fogCol = accentGlow(fogT + t * 0.025) * 1.8;
+      col = mix(col, col + fogCol, m.fog * 0.65);
+
+      // ── Proximity glow — whisper of light near all surfaces ───────────────
+      float proxGlow = exp(-m.minDist * 3.5);
+      col += palette(t * 0.06 + proxGlow) * proxGlow * 0.7;
+
+      // ── Background nebula — so empty space isn't pure black ───────────────
+      float bgNoise = fbm(uv * 0.9 + t * 0.022);
+      float bgNoise2= fbm(uv * 2.3 - t * 0.018 + 5.3);
+      vec3  bgCol   = palette(bgNoise * 0.6 + t * 0.03) * bgNoise * 0.18
+                    + accentGlow(bgNoise2 + t * 0.015) * bgNoise2 * 0.10;
+      col += bgCol;
+
+      // ── Mouse-driven radial pulse — cursor creates local spacetime bend ───
+      float mouseDist = length(uv - mouse * vec2(u_resolution.x/u_resolution.y, 1.0) * 0.5);
+      float pulse = exp(-mouseDist * 2.8) * mouseLen * 0.45;
+      col += accentGlow(t * 0.1 + mouseDist) * pulse;
+
+      // ── Vignette — draw attention inward ─────────────────────────────────
+      float vig = 1.0 - smoothstep(0.55, 1.45, length(vUv - 0.5) * 2.2);
+      col *= vig;
+
+      // ── Tonemapping: filmic (Reinhard extended) ───────────────────────────
+      col = col / (col + 0.9);           // soft compress highlights
+      col = pow(clamp(col, 0.0, 1.0), vec3(0.42)); // gamma 2.4 approx
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  // ─── Bootstrap Three.js ──────────────────────────────────────────────────────
+  const canvas = document.getElementById('quantum-canvas') as HTMLCanvasElement;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // perf cap
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  const uniforms = {
+    u_time:       { value: 0.0 },
+    u_mouse:      { value: new THREE.Vector2(0.5, 0.5) },
+    u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+  };
+
+  const geometry = new THREE.PlaneGeometry(2, 2);
+  const material = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms,
+  });
+
+  scene.add(new THREE.Mesh(geometry, material));
+
+  // ─── Mouse tracking — smoothed via lerp ─────────────────────────────────────
+  const targetMouse = new THREE.Vector2(0.5, 0.5);
+  const smoothMouse = new THREE.Vector2(0.5, 0.5);
+
+  window.addEventListener('mousemove', (e) => {
+    targetMouse.set(
+      e.clientX / window.innerWidth,
+      1.0 - e.clientY / window.innerHeight   // flip Y for GLSL
+    );
+  });
+
+  // Touch support
+  window.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    targetMouse.set(
+      t.clientX / window.innerWidth,
+      1.0 - t.clientY / window.innerHeight
+    );
+  }, { passive: true });
+
+  // ─── Resize ──────────────────────────────────────────────────────────────────
+  const onResize = () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
+  };
+  window.addEventListener('resize', onResize);
+
+  // ─── Render loop ─────────────────────────────────────────────────────────────
+  const clock = new THREE.Clock();
+
+  (function animate() {
+    requestAnimationFrame(animate);
+
+    // Smooth mouse — lerp factor 0.04 = very silky
+    smoothMouse.lerp(targetMouse, 0.04);
+    uniforms.u_mouse.value.copy(smoothMouse);
+    uniforms.u_time.value = clock.getElapsedTime();
+
+    renderer.render(scene, camera);
+  })();
+</script>
+
+<style>
+  #quantum-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    display: block;
+    pointer-events: none;
+  }
+</style>
