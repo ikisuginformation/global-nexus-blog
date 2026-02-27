@@ -1,53 +1,100 @@
 ---
 // src/components/ArticleCard.astro
-// "Gallery Plaque" — Urushi edition: deep lacquer with vermilion & gold accents
-
 import type { CollectionEntry } from 'astro:content';
-import FormattedDate from './FormattedDate.astro';
 
 interface Props {
-    post: CollectionEntry<'blog'>;
-    index?: number;
+  post: CollectionEntry<'blog'>;
 }
 
-const { post, index = 0 } = Astro.props;
-const serialNumber = String(index + 1).padStart(3, '0');
+const { post } = Astro.props;
+const { title, description, date, language } = post.data;
+
+const formattedDate = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
 ---
 
-<a href={`/blog/${post.slug}/`} class="group block relative w-full border-t border-[#d4af37]/15 pt-8 pb-12 transition-all duration-700 hover:border-[#d4af37]/40 transform-gpu hover:scale-[1.012] origin-left will-change-transform">
-
-    <div class="flex flex-col xl:flex-row items-start xl:items-baseline gap-6 xl:gap-16">
-
-        <span class="text-xs font-mono text-[#9a7a5a] group-hover:text-[#d4af37] transition-colors shrink-0">
-            Nº {serialNumber}
-        </span>
-
-        <div class="flex-grow w-full">
-            <div class="flex items-center gap-4 text-[9px] font-mono tracking-[0.3em] text-[#7a5a3a] uppercase mb-6 group-hover:text-[#9a7a5a] transition-colors">
-                <FormattedDate date={post.data.date} />
-                <span class="w-8 h-[1px] bg-[#6a4a2a] group-hover:bg-[#d4af37] transition-colors"></span>
-                <span>{post.data.language || 'GLOBAL'}</span>
-            </div>
-
-            <h3 class="text-3xl md:text-5xl lg:text-6xl font-serif font-light text-[#f0e8d8] group-hover:italic group-hover:font-bold transition-all duration-500 leading-[1.1] tracking-tighter">
-                {post.data.title}
-            </h3>
-
-            <div class="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
-                <div class="overflow-hidden">
-                    <p class="mt-8 text-sm md:text-base text-[#c4a882] font-sans leading-relaxed max-w-2xl border-l border-[#d9381e]/30 pl-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 delay-100">
-                        {post.data.description}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="shrink-0 opacity-0 -translate-x-8 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-700 ease-out hidden md:block">
-            <span class="text-[9px] font-mono tracking-[0.2em] uppercase text-[#d4af37] rotate-90 origin-left block transform translate-y-8">
-                Read
-            </span>
-            <div class="w-[1px] h-12 bg-[#d4af37] mt-2"></div>
-        </div>
-
+<a href={`/blog/${post.slug}/`} class="article-card">
+  <article>
+    <header class="card-header">
+      <span class="meta-date">{formattedDate}</span>
+      <span class="meta-lang">[{language.toUpperCase()}]</span>
+    </header>
+    <h2 class="card-title">{title}</h2>
+    <p class="card-excerpt">{description}</p>
+    <div class="card-footer">
+      <span class="read-more">Read Article →</span>
     </div>
+  </article>
 </a>
+
+<style>
+  /* 漆器風ガラスカードのスタイル */
+  .article-card {
+    display: block;
+    text-decoration: none;
+    /* 背景：漆黒ベースに、ほんのり朱色と金を混ぜた半透明ガラス */
+    background: linear-gradient(
+      135deg,
+      rgba(5, 5, 5, 0.85),  /* 深い黒 */
+      rgba(60, 10, 5, 0.7)  /* ほんのり朱色 */
+    );
+    /* すりガラス効果 */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    
+    /* 枠線：鈍く光る金継ぎのようなゴールド */
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ホバー時のアクション：浮かび上がり、枠線が明るくなる */
+  .article-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(212, 175, 55, 0.6); /* ゴールドが明るく */
+    box-shadow: 0 12px 30px rgba(5, 0, 0, 0.5);
+    background: linear-gradient(
+      135deg,
+      rgba(10, 10, 10, 0.9),
+      rgba(80, 20, 10, 0.75)
+    );
+  }
+
+  /* タイトルなどの文字色 */
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    /* 羊皮紙のような温かい白 */
+    color: #f0e8d8; 
+    margin: 0.5rem 0 1rem;
+    line-height: 1.3;
+  }
+
+  .card-excerpt {
+    /* 少し落ち着いた金色 */
+    color: rgba(240, 232, 216, 0.8);
+    line-height: 1.6;
+  }
+
+  .meta-date, .meta-lang, .read-more {
+    font-family: monospace;
+    font-size: 0.8rem;
+    /* アクセントの朱色 */
+    color: #d9381e; 
+    letter-spacing: 0.05em;
+  }
+  
+  .card-header {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+  }
+</style>

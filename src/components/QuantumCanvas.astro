@@ -198,12 +198,20 @@
     // cosine palette — Urushi lacquer: profound abyss black cycling through
     // rich vermilion (#d9381e) with the deeper oscillations touching crimson
     vec3 palette(float t) {
-      vec3 a = vec3(0.30, 0.04, 0.02);  // warm dark midpoint — deep lacquer red
-      vec3 b = vec3(0.28, 0.06, 0.02);  // amplitude — heavy red, minimal green/blue
-      vec3 c = vec3(1.0,  1.8,  2.5);   // green/blue cycle faster → occasional warmth
-      vec3 d = vec3(0.0,  0.25, 0.50);  // phase offsets for organic colour spread
-      return a + b * cos(TAU * (c * t + d));
-    }
+    vec3 a = vec3(0.02, 0.01, 0.01); // ベース：ほぼ漆黒
+    vec3 b = vec3(0.4, 0.1, 0.05);   // 振幅：深い朱色がゆらめく
+    vec3 c = vec3(1.0, 1.0, 1.0);    // 周波数
+    vec3 d = vec3(0.0, 0.33, 0.67);  // 位相
+    
+    // 基本のゆらぎ色
+    vec3 baseColor = a + b * cos(6.28318 * (c * t + d));
+    
+    // アクセント：金粉のような鋭い光の粒子を追加
+    float goldDust = pow(cos(t * 8.0 + u_time * 0.5) * 0.5 + 0.5, 16.0);
+    vec3 goldAccent = vec3(1.0, 0.8, 0.3) * goldDust * 0.3;
+
+    return baseColor + goldAccent;
+}
 
     // Accent glow: brushed gold / brass dust (#d4af37)
     vec3 accentGlow(float t) {
