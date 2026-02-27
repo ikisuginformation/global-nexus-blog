@@ -7,9 +7,12 @@ interface Props {
 }
 
 const { post } = Astro.props;
-const { title, description, date, language } = post.data;
 
-const formattedDate = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-US', {
+// language を削除し、title, description, date のみ取得
+const { title, description, date } = post.data;
+
+// 言語判定を捨て、すべて英語（en-US）のフォーマットに固定
+const formattedDate = date.toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'short',
   day: 'numeric',
@@ -20,7 +23,7 @@ const formattedDate = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-
   <article>
     <header class="card-header">
       <span class="meta-date">{formattedDate}</span>
-      <span class="meta-lang">[{language.toUpperCase()}]</span>
+      <span class="meta-lang">[EN]</span>
     </header>
     <h2 class="card-title">{title}</h2>
     <p class="card-excerpt">{description}</p>
@@ -35,17 +38,13 @@ const formattedDate = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-
   .article-card {
     display: block;
     text-decoration: none;
-    /* 背景：漆黒ベースに、ほんのり朱色と金を混ぜた半透明ガラス */
     background: linear-gradient(
       135deg,
-      rgba(5, 5, 5, 0.85),  /* 深い黒 */
-      rgba(60, 10, 5, 0.7)  /* ほんのり朱色 */
+      rgba(5, 5, 5, 0.85),
+      rgba(60, 10, 5, 0.7)
     );
-    /* すりガラス効果 */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    
-    /* 枠線：鈍く光る金継ぎのようなゴールド */
     border: 1px solid rgba(212, 175, 55, 0.25);
     border-radius: 12px;
     padding: 2rem;
@@ -55,10 +54,9 @@ const formattedDate = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
-  /* ホバー時のアクション：浮かび上がり、枠線が明るくなる */
   .article-card:hover {
     transform: translateY(-6px);
-    border-color: rgba(212, 175, 55, 0.6); /* ゴールドが明るく */
+    border-color: rgba(212, 175, 55, 0.6);
     box-shadow: 0 12px 30px rgba(5, 0, 0, 0.5);
     background: linear-gradient(
       135deg,
@@ -67,18 +65,15 @@ const formattedDate = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-
     );
   }
 
-  /* タイトルなどの文字色 */
   .card-title {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
-    /* 羊皮紙のような温かい白 */
     color: #f0e8d8; 
     margin: 0.5rem 0 1rem;
     line-height: 1.3;
   }
 
   .card-excerpt {
-    /* 少し落ち着いた金色 */
     color: rgba(240, 232, 216, 0.8);
     line-height: 1.6;
   }
@@ -86,15 +81,19 @@ const formattedDate = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-
   .meta-date, .meta-lang, .read-more {
     font-family: monospace;
     font-size: 0.8rem;
-    /* アクセントの朱色 */
     color: #d9381e; 
     letter-spacing: 0.05em;
   }
   
   .card-header {
     display: flex;
-    gap: 1rem;
+    justify-content: space-between;
     margin-bottom: 1rem;
     opacity: 0.8;
+  }
+
+  .card-footer {
+    margin-top: 1.5rem;
+    text-align: right;
   }
 </style>
