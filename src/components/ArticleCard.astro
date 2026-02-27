@@ -1,17 +1,21 @@
 ---
 // src/components/ArticleCard.astro
+// Gallery card — used for all posts except the hero (index 0).
+//
+// Desktop: Borderless floating card. Transparent at rest, glass emerges on hover.
+//          Z-axis depth via CSS perspective on parent. Playfair Display 0.08em wide.
+// Mobile:  Edge-to-edge list item. 1px antique gold hairline separator. No hover fx.
+
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
-  post: CollectionEntry<'blog'>;
+  post:   CollectionEntry<'blog'>;
+  index?: number;
 }
 
-const { post } = Astro.props;
-
-// language を削除し、title, description, date のみ取得
+const { post, index = 0 } = Astro.props;
 const { title, description, date } = post.data;
 
-// 言語判定を捨て、すべて英語（en-US）のフォーマットに固定
 const formattedDate = date.toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'short',
@@ -19,81 +23,177 @@ const formattedDate = date.toLocaleDateString('en-US', {
 });
 ---
 
-<a href={`/blog/${post.slug}/`} class="article-card">
+<a href={`/blog/${post.slug}/`} class="article-card" data-index={index}>
   <article>
-    <header class="card-header">
-      <span class="meta-date">{formattedDate}</span>
-      <span class="meta-lang">[EN]</span>
-    </header>
+    <span class="card-date">{formattedDate}</span>
     <h2 class="card-title">{title}</h2>
-    <p class="card-excerpt">{description}</p>
-    <div class="card-footer">
-      <span class="read-more">Read Article →</span>
-    </div>
+    {description && <p class="card-excerpt">{description}</p>}
+    <span class="card-cta" aria-hidden="true">Read &rarr;</span>
   </article>
 </a>
 
 <style>
-  /* 漆器風ガラスカードのスタイル */
+  /* ── Base: shared between mobile and desktop ─────────────────────────────── */
   .article-card {
     display: block;
     text-decoration: none;
-    background: linear-gradient(
-      135deg,
-      rgba(5, 5, 5, 0.85),
-      rgba(60, 10, 5, 0.7)
-    );
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(212, 175, 55, 0.25);
-    border-radius: 12px;
-    padding: 2rem;
-    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    color: inherit;
     position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    padding: 2.2rem 2rem 2.5rem;
+  }
+
+  .article-card article {
+    position: relative;
+    z-index: 1;   /* above the ::before glass layer */
+  }
+
+  /* ── Desktop: floating glass-on-hover ────────────────────────────────────── */
+
+  /* Dark glass panel — invisible at rest, materialises on hover */
+  .article-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    transition:
+      background     0.50s cubic-bezier(0.4, 0, 0.2, 1),
+      backdrop-filter 0.50s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  /* Gold hairline at top — invisible at rest, appears on hover */
+  .article-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 2rem; right: 2rem;
+    height: 1px;
+    background: rgba(185, 158, 110, 0.0);
+    transition: background 0.45s ease;
+  }
+
+  /* Hover: card lifts toward viewer (perspective on .gn-gallery parent does the work) */
+  .article-card {
+    transition: transform 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .article-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(212, 175, 55, 0.6);
-    box-shadow: 0 12px 30px rgba(5, 0, 0, 0.5);
-    background: linear-gradient(
-      135deg,
-      rgba(10, 10, 10, 0.9),
-      rgba(80, 20, 10, 0.75)
-    );
+    transform: translateZ(22px) translateY(-3px);
   }
 
+  .article-card:hover::before {
+    background: rgba(5, 4, 9, 0.54);
+    backdrop-filter: blur(14px) saturate(135%);
+    -webkit-backdrop-filter: blur(14px) saturate(135%);
+  }
+
+  .article-card:hover::after {
+    background: rgba(185, 158, 110, 0.26);
+  }
+
+  /* Date label */
+  .card-date {
+    display: block;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 0.67rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(140, 134, 126, 0.50);
+    margin-bottom: 0.8rem;
+    transition: color 0.35s ease;
+  }
+  .article-card:hover .card-date { color: rgba(185, 158, 110, 0.65); }
+
+  /* Title — Playfair Display with wide, expensive letter-spacing */
   .card-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
-    color: #f0e8d8; 
-    margin: 0.5rem 0 1rem;
-    line-height: 1.3;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.25rem, 2vw, 1.65rem);
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: 0.08em;   /* ultra-wide: the Urushi signature */
+    line-height: 1.22;
+    color: rgba(220, 214, 205, 0.88);
+    text-shadow: none;
+    margin-bottom: 0.8rem;
+    transition: color 0.35s ease, transform 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+    transform: translateY(0);
   }
 
+  /* Title rises slightly on hover — z-axis depth illusion within the card */
+  .article-card:hover .card-title {
+    color: rgba(240, 234, 224, 1.0);
+    transform: translateY(-3px);
+  }
+
+  /* Excerpt — 2-line clamp */
   .card-excerpt {
-    color: rgba(240, 232, 216, 0.8);
-    line-height: 1.6;
-  }
-
-  .meta-date, .meta-lang, .read-more {
-    font-family: monospace;
-    font-size: 0.8rem;
-    color: #d9381e; 
-    letter-spacing: 0.05em;
-  }
-  
-  .card-header {
-    display: flex;
-    justify-content: space-between;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: clamp(0.9rem, 1.2vw, 1.05rem);
+    line-height: 1.65;
+    color: rgba(155, 148, 138, 0.62);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     margin-bottom: 1rem;
-    opacity: 0.8;
+    transition: color 0.35s ease;
+  }
+  .article-card:hover .card-excerpt { color: rgba(175, 168, 158, 0.75); }
+
+  /* CTA arrow — muted at rest, gold on hover */
+  .card-cta {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 0.67rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(140, 134, 126, 0.0);   /* invisible at rest */
+    transition: color 0.35s ease;
+  }
+  .article-card:hover .card-cta { color: rgba(185, 158, 110, 0.72); }
+
+  /* ── Mobile: edge-to-edge minimalist list ────────────────────────────────── */
+  @media (max-width: 767px) {
+    .article-card {
+      padding: 1.4rem 1.5rem;
+      border-bottom: 1px solid rgba(185, 158, 110, 0.16);
+      border-radius: 0;
+      /* No transforms on mobile — performance + clarity */
+      transform: none !important;
+      will-change: auto;
+    }
+
+    .article-card::before,
+    .article-card::after { display: none; }
+
+    .card-title {
+      font-size: clamp(1.1rem, 4.8vw, 1.35rem);
+      letter-spacing: 0.04em;
+      transform: none !important;
+    }
+
+    .card-excerpt {
+      -webkit-line-clamp: 1;
+      font-size: 0.88rem;
+    }
+
+    .card-cta { display: none; }
   }
 
-  .card-footer {
-    margin-top: 1.5rem;
-    text-align: right;
+  /* ── Reduced motion ───────────────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .article-card,
+    .article-card::before,
+    .article-card::after,
+    .card-title,
+    .card-date,
+    .card-excerpt,
+    .card-cta {
+      transition: none;
+    }
+    .article-card:hover { transform: none; }
+    .article-card:hover .card-title { transform: none; }
   }
 </style>

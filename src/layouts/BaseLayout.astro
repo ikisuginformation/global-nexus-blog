@@ -1,14 +1,18 @@
 ---
 // src/layouts/BaseLayout.astro
-// Integrates QuantumCanvas WebGL background + glassmorphism content layer
+// Index / listing layout.
+// All heading text-shadows: removed.
+// Only structural contrast, no cheap glow tricks.
+
 import QuantumCanvas from '../components/QuantumCanvas.astro';
 
 export interface Props {
-  title: string;
+  title:        string;
   description?: string;
+  fullBleed?:   boolean;
 }
 
-const { title, description = 'A quantum exploration of ideas.' } = Astro.props;
+const { title, description = '', fullBleed = false } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -19,65 +23,79 @@ const { title, description = 'A quantum exploration of ideas.' } = Astro.props;
   <meta name="description" content={description} />
   <title>{title}</title>
 
-  <!-- Playfair Display — the editorial crown jewel -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
     rel="stylesheet"
   />
-
-  <!-- Three.js from CDN as fallback (Astro bundler handles the import in the component) -->
 </head>
 
 <body>
-  <!-- ── WebGL Abyss — fixed, behind everything ──────────────────────────── -->
+  <!-- WebGL lacquer floor — fixed behind everything -->
   <QuantumCanvas />
 
-  <!-- ── Ambient radial gradient overlay — softens the raw WebGL ─────────── -->
-  <div class="ambient-overlay" aria-hidden="true"></div>
+  <!-- Stealth Morphic Nav ─────────────────────────────────────────────────
+       Desktop: GN logo at opacity 0.2, reveals on mouse proximity to top.
+       Mobile:  fixed bottom bar — razor-thin gold hairline, icons only.
+  ──────────────────────────────────────────────────────────────────────── -->
+  <nav id="gn-nav" class="gn-nav" aria-label="Site navigation">
+    <a href="/" class="gn-logo" aria-label="Global Nexus home">GN</a>
+    <div class="gn-actions">
+      <button class="gn-icon-btn" aria-label="Search">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7.5"/><line x1="17" y1="17" x2="22.5" y2="22.5"/>
+        </svg>
+      </button>
+      <button class="gn-icon-btn" aria-label="Menu">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
 
-  <!-- ── Primary content ──────────────────────────────────────────────────── -->
-  <main class="glass-main">
+  <!-- Dark ambient scrim — deepens abyss, never white -->
+  <div class="ambient-scrim" aria-hidden="true"></div>
+
+  <!-- Content -->
+  <main class:list={['site-main', { 'site-main--full': fullBleed }]}>
     <slot />
   </main>
 
-  <!-- ── Noise grain overlay — tactile depth ────────────────────────────── -->
+  <!-- Grain -->
   <div class="grain-overlay" aria-hidden="true"></div>
 </body>
 </html>
 
 <style is:global>
-  /* ── Reset & tokens ───────────────────────────────────────────────────── */
+  /* ── Tokens ──────────────────────────────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    /* Urushi palette — profound abyss black */
-    --c-void:        #050505;
-    --c-abyss:       #0a0202;
-    --c-deep:        #100303;
-    --c-glass-bg:    rgba(5, 1, 1, 0.72);
-    --c-glass-hover: rgba(10, 2, 1, 0.82);
-    --c-glass-card:  rgba(8, 1, 1, 0.65);
+    --c-void:        #030303;
+    --c-abyss:       #060409;
+    --c-glass-bg:    rgba(5, 4, 9, 0.68);
+    --c-glass-hover: rgba(7, 5, 12, 0.76);
+    --c-glass-card:  rgba(5, 4, 9, 0.58);
+    --c-glass-edge:  rgba(255, 255, 255, 0.055);
 
-    /* Urushi accents — vermilion & brushed gold */
-    --c-vermilion:   #d9381e;
-    --c-gold:        #d4af37;
-    --c-lacquer:     #8b1a0a;
-    --c-glow-red:    rgba(217, 56, 30, 0.18);
-    --c-glow-gold:   rgba(212, 175, 55, 0.15);
+    /* Type colours — warm, dark, contrast-only */
+    --c-heading:     rgba(230, 224, 215, 0.96);
+    --c-body:        rgba(195, 188, 178, 0.82);
+    --c-muted:       rgba(140, 134, 126, 0.60);
+    --c-accent:      rgba(185, 158, 110, 0.80);   /* antique gold */
 
-    /* Glass borders — warm gold tint */
-    --glass-border:  1px solid rgba(212, 175, 55, 0.12);
-    --glass-border-strong: 1px solid rgba(212, 175, 55, 0.28);
-    --glass-blur:    blur(14px) saturate(140%);
+    /* Glass */
+    --glass-blur:    blur(16px) saturate(140%);
 
-    /* Typography */
+    /* Type */
     --f-display:    'Playfair Display', Georgia, serif;
     --f-body:       'EB Garamond', Georgia, serif;
-    --f-mono:       'Fira Code', 'Courier New', monospace;
 
-    /* Spacing rhythm */
+    /* Rhythm */
     --space-xs: 0.5rem;
     --space-s:  1rem;
     --space-m:  2rem;
@@ -86,7 +104,7 @@ const { title, description = 'A quantum exploration of ideas.' } = Astro.props;
   }
 
   html {
-    background: var(--c-void);   /* #050505 — profound Urushi abyss */
+    background: var(--c-void);
     color-scheme: dark;
     scroll-behavior: smooth;
   }
@@ -95,37 +113,36 @@ const { title, description = 'A quantum exploration of ideas.' } = Astro.props;
     background: transparent;
     font-family: var(--f-body);
     font-size: clamp(1.05rem, 1.5vw, 1.2rem);
-    line-height: 1.75;
-    color: rgba(240, 228, 208, 0.88);   /* warm cream — Urushi parchment */
+    line-height: 1.78;
+    color: var(--c-body);
     min-height: 100vh;
     overflow-x: hidden;
   }
 
-  /* ── Ambient overlay ──────────────────────────────────────────────────── */
-  .ambient-overlay {
+  /* ── Ambient scrim ────────────────────────────────────────────────────────── */
+  .ambient-scrim {
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 70% 50% at 20% 50%, rgba(217, 56, 30, 0.04) 0%, transparent 70%),
-      radial-gradient(ellipse 60% 60% at 80% 30%, rgba(139, 26, 10, 0.05) 0%, transparent 70%),
-      radial-gradient(ellipse 80% 40% at 50% 100%, rgba(5, 1, 1, 0.75) 0%, transparent 80%);
+      radial-gradient(ellipse 100% 60% at 50% 100%, rgba(3,2,5,0.75) 0%, transparent 70%),
+      linear-gradient(180deg, rgba(3,2,5,0.25) 0%, rgba(3,2,5,0.50) 100%);
   }
 
-  /* ── Grain overlay — adds tactile film texture ────────────────────────── */
+  /* ── Grain ────────────────────────────────────────────────────────────────── */
   .grain-overlay {
     position: fixed;
     inset: 0;
     z-index: 9999;
     pointer-events: none;
-    opacity: 0.028;
+    opacity: 0.025;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 256px;
   }
 
-  /* ── Glass main container ─────────────────────────────────────────────── */
-  .glass-main {
+  /* ── Main container ───────────────────────────────────────────────────────── */
+  .site-main {
     position: relative;
     z-index: 1;
     max-width: 1200px;
@@ -133,96 +150,182 @@ const { title, description = 'A quantum exploration of ideas.' } = Astro.props;
     padding: var(--space-l) var(--space-m);
   }
 
-  /* ── Glassmorphism card base ──────────────────────────────────────────── */
+  /* Full-bleed variant — used by index page for hero/gallery layout */
+  .site-main--full {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* ── Stealth Morphic Nav ──────────────────────────────────────────────────── */
+  .gn-nav {
+    --nav-reveal: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.4rem 2.5rem;
+    pointer-events: none;     /* ghost layer — only children are interactive */
+  }
+
+  .gn-logo {
+    font-family: var(--f-display);
+    font-size: 0.80rem;
+    font-weight: 900;
+    letter-spacing: 0.40em;
+    text-transform: uppercase;
+    color: var(--c-heading);
+    text-decoration: none;
+    opacity: calc(0.20 + var(--nav-reveal) * 0.72);
+    transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+  }
+
+  .gn-actions {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+    opacity: calc(0.20 + var(--nav-reveal) * 0.72);
+    transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+  }
+
+  .gn-icon-btn {
+    background: none;
+    border: none;
+    padding: 0.35rem;
+    cursor: pointer;
+    color: var(--c-heading);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.25s;
+  }
+  .gn-icon-btn:hover { color: var(--c-accent); }
+
+  /* Mobile: flip to bottom bar with gold hairline */
+  @media (max-width: 767px) {
+    .gn-nav {
+      top: auto;
+      bottom: 0;
+      padding: 0.65rem 2rem;
+      background: rgba(3, 2, 5, 0.92);
+      backdrop-filter: blur(20px) saturate(130%);
+      -webkit-backdrop-filter: blur(20px) saturate(130%);
+      border-top: 1px solid rgba(185, 158, 110, 0.52);
+      pointer-events: auto;
+      --nav-reveal: 1;   /* always fully visible on mobile */
+    }
+
+    .gn-logo { display: none; }
+
+    .gn-actions {
+      width: 100%;
+      justify-content: center;
+      gap: 3.5rem;
+      opacity: 1;
+    }
+
+    .gn-icon-btn { padding: 0.5rem; }
+  }
+
+  /* ── Glass panel base ─────────────────────────────────────────────────────── */
   .glass-panel {
-    background:     var(--c-glass-bg);
-    backdrop-filter: var(--glass-blur);
+    background:       var(--c-glass-bg);
+    backdrop-filter:  var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    border:         var(--glass-border);
-    border-radius:  16px;
+    border:           1px solid var(--c-glass-edge);
+    border-radius:    4px;
     box-shadow:
-      0 0 0 1px rgba(212,175,55,0.04) inset,
-      0 8px 32px rgba(0,0,0,0.6),
-      0 0 80px rgba(217,56,30,0.03);
-    transition: background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+      0 2px 4px rgba(0,0,0,0.4),
+      0 16px 48px rgba(0,0,0,0.55);
+    transition:
+      background 0.35s ease,
+      box-shadow  0.35s ease,
+      border-color 0.35s ease;
   }
 
   .glass-panel:hover {
-    background:    var(--c-glass-hover);
-    border-color:  rgba(212, 175, 55, 0.24);
+    background:   var(--c-glass-hover);
+    border-color: rgba(185, 158, 110, 0.12);
     box-shadow:
-      0 0 0 1px rgba(212,175,55,0.08) inset,
-      0 16px 48px rgba(0,0,0,0.7),
-      0 0 120px rgba(217,56,30,0.07),
-      0 0 40px  rgba(212,175,55,0.05);
+      0 2px 4px rgba(0,0,0,0.4),
+      0 24px 64px rgba(0,0,0,0.65),
+      0 0 80px rgba(185,158,110,0.04);
   }
 
-  /* ── Typography — Bionic Reading Protocol ─────────────────────────────── */
-  /* Bold the first half of each word for accelerated parsing.
-     Applied via JS below (works on static content). */
-
+  /* ── Headings — contrast only, zero text-shadow ──────────────────────────── */
   h1, h2, h3, h4 {
-    font-family: var(--f-display);
-    font-weight: 700;
+    font-family:    var(--f-display);
+    font-weight:    700;
+    line-height:    1.1;
     letter-spacing: -0.02em;
-    line-height: 1.1;
-    color: rgba(245, 235, 215, 0.97);   /* warm ivory — Urushi washi paper */
-    /* Subtle text glow — warm ember above the lacquer */
-    text-shadow:
-      0 0 40px rgba(217, 56, 30, 0.15),
-      0 2px 8px rgba(0,0,0,0.8);
+    color:          var(--c-heading);
+    text-shadow:    none;          /* THE LAW. No shadow. Ever. */
   }
 
   h1 {
-    font-size: clamp(3rem, 8vw, 7rem);
-    font-weight: 900;
-    font-style: italic;
-    letter-spacing: -0.03em;
-    text-shadow:
-      0 0 80px rgba(217, 56, 30, 0.22),
-      0 0 160px rgba(212, 175, 55, 0.12),
-      0 4px 16px rgba(0,0,0,0.9);
+    font-size:      clamp(3rem, 8vw, 7rem);
+    font-weight:    900;
+    font-style:     italic;
+    letter-spacing: 0.06em;   /* wide, expensive — Urushi/Saint Laurent character */
+    text-shadow:    none;
   }
 
-  h2 { font-size: clamp(2rem, 5vw, 3.8rem); }
-  h3 { font-size: clamp(1.4rem, 3vw, 2.2rem); }
+  h2 { font-size: clamp(1.8rem, 4.5vw, 3.2rem); }
+  h3 { font-size: clamp(1.25rem, 2.5vw, 2rem); font-style: italic; }
+  h4 {
+    font-family:    var(--f-body);
+    font-size:      0.72rem;
+    font-weight:    400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color:          var(--c-muted);
+    text-shadow:    none;
+  }
 
-  p { font-family: var(--f-body); }
+  p {
+    font-family: var(--f-body);
+    text-shadow: none;   /* explicit — never inherit a shadow */
+  }
 
-  /* Bionic bold spans */
+  /* Bionic bold */
   b.bionic {
     font-weight: 700;
-    color: rgba(255, 245, 225, 1.0);   /* warm white */
+    color: rgba(215, 208, 198, 0.95);
   }
 
-  /* ── Links ────────────────────────────────────────────────────────────── */
+  /* ── Links ────────────────────────────────────────────────────────────────── */
   a {
-    color: var(--c-gold);
+    color: var(--c-accent);
     text-decoration: none;
-    transition: color 0.2s, text-shadow 0.2s;
+    transition: color 0.2s;
   }
   a:hover {
-    color: #fff5e0;
-    text-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+    color: rgba(215, 188, 140, 0.95);
+    /* No text-shadow on hover. Colour shift is sufficient. */
   }
 
-  /* ── Site header ────────────────────────────────────────────────────────── */
+  /* ── Site header ──────────────────────────────────────────────────────────── */
   .site-header {
     padding: var(--space-l) 0 var(--space-m);
-    border-bottom: 1px solid rgba(212, 175, 55, 0.10);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
     margin-bottom: var(--space-l);
   }
 
   .site-header .eyebrow {
-    font-size: 0.7rem;
-    letter-spacing: 0.35em;
+    display: block;
+    font-size:      0.68rem;
+    letter-spacing: 0.30em;
     text-transform: uppercase;
-    color: var(--c-gold);
-    opacity: 0.7;
-    margin-bottom: var(--space-xs);
+    color:          var(--c-muted);
+    margin-bottom:  var(--space-xs);
   }
 
-  /* ── Article grid ──────────────────────────────────────────────────────── */
+  /* ── Article grid ─────────────────────────────────────────────────────────── */
   .article-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
@@ -230,44 +333,41 @@ const { title, description = 'A quantum exploration of ideas.' } = Astro.props;
     margin-top: var(--space-l);
   }
 
-  /* ── Scrollbar styling ─────────────────────────────────────────────────── */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: var(--c-abyss); }
-  ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.30); border-radius: 2px; }
-
-  /* ── Selection ─────────────────────────────────────────────────────────── */
-  ::selection {
-    background: rgba(217, 56, 30, 0.35);
-    color: #fff5e0;
-  }
-
-  /* ── Utility: glow accent line ─────────────────────────────────────────── */
-  .glow-rule {
+  /* ── Thin rule — structure only, no gradient rainbow ─────────────────────── */
+  .site-rule {
     border: none;
     height: 1px;
-    background: linear-gradient(90deg,
-      transparent,
-      rgba(217, 56, 30, 0.50) 30%,
-      rgba(212, 175, 55, 0.50) 70%,
-      transparent
-    );
+    background: rgba(255,255,255,0.06);
     margin: var(--space-l) 0;
+  }
+
+  /* ── Scrollbar ────────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--c-abyss); }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(185,158,110,0.18);
+    border-radius: 2px;
+  }
+
+  /* ── Selection ────────────────────────────────────────────────────────────── */
+  ::selection {
+    background: rgba(185,158,110,0.20);
+    color: rgba(230,224,215,0.98);
   }
 </style>
 
-<!-- Bionic Reading: bold first ~55% of each word's letters in all text nodes -->
+<!-- Bionic Reading — paragraph text only, never headings -->
 <script>
   function bionicNode(node: Text) {
     const words = node.textContent?.split(/(\s+)/) ?? [];
     if (words.length < 2) return;
-
     const frag = document.createDocumentFragment();
     for (const word of words) {
       if (/^\s+$/.test(word)) {
         frag.appendChild(document.createTextNode(word));
       } else {
-        const cut = Math.max(1, Math.ceil(word.length * 0.55));
-        const b = document.createElement('b');
+        const cut = Math.max(1, Math.ceil(word.length * 0.52));
+        const b   = document.createElement('b');
         b.className = 'bionic';
         b.textContent = word.slice(0, cut);
         frag.appendChild(b);
@@ -277,26 +377,38 @@ const { title, description = 'A quantum exploration of ideas.' } = Astro.props;
     node.replaceWith(frag);
   }
 
-  function applyBionic(root: Element) {
-    // Only apply to <p> and <li> tags — not headings (Playfair handles those)
-    const walker = document.createTreeWalker(
-      root,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode(node) {
-          const p = node.parentElement;
-          if (!p) return NodeFilter.FILTER_REJECT;
-          const tag = p.tagName.toLowerCase();
-          if (['p', 'li', 'td', 'blockquote'].includes(tag)) return NodeFilter.FILTER_ACCEPT;
-          return NodeFilter.FILTER_SKIP;
-        }
+  document.addEventListener('DOMContentLoaded', () => {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const p = node.parentElement?.tagName.toLowerCase();
+        return (p === 'p' || p === 'li')
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_SKIP;
       }
-    );
+    });
     const nodes: Text[] = [];
     let n: Node | null;
     while ((n = walker.nextNode())) nodes.push(n as Text);
     nodes.forEach(bionicNode);
-  }
+  });
+</script>
 
-  document.addEventListener('DOMContentLoaded', () => applyBionic(document.body));
+<!-- Stealth nav: reveal GN logo on mouse proximity to top edge (desktop only) -->
+<script>
+  (function () {
+    const nav = document.getElementById('gn-nav');
+    if (!nav) return;
+
+    const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      if (isMobile()) return;
+      const proximity = Math.max(0, 1 - e.clientY / 160);
+      nav.style.setProperty('--nav-reveal', proximity.toFixed(3));
+    });
+
+    document.addEventListener('mouseleave', () => {
+      if (!isMobile()) nav.style.setProperty('--nav-reveal', '0');
+    });
+  })();
 </script>
