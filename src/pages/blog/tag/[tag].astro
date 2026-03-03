@@ -1,62 +1,35 @@
----
+﻿---
 import { getCollection } from 'astro:content';
-import BaseLayout from '../../../../layouts/BaseLayout.astro';
-import Header from '../../../../src/components/Header.astro';
-import Footer from '../../../../src/components/Footer.astro';
-import FormattedDate from '../../../../src/components/FormattedDate.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import FormattedDate from '../../../components/FormattedDate.astro';
 
 export async function getStaticPaths() {
     const allPosts = await getCollection('blog');
-    
-    // 全タグを収集
     const uniqueTags = [...new Set(allPosts.flatMap((post) => post.data.tags || []))];
 
     return uniqueTags.map((tag) => {
-        const filteredPosts = allPosts.filter((post) => 
-            (post.data.tags || []).includes(tag)
-        ).sort(
-            (a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0)
-        );
-
-        // URLを安全な形式に変換（小文字化し、スペースをハイフンに変換）
-        const safeSlug = tag.toLowerCase().replace(/\s+/g, '-');
+        const filteredPosts = allPosts
+            .filter((post) => (post.data.tags || []).includes(tag))
+            .sort((a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0));
 
         return {
-            params: { tag: safeSlug }, // URLは安全な文字列
-            props: { originalTag: tag, posts: filteredPosts }, // 表示用には元の文字列を渡す
+            params: { tag },
+            props: { posts: filteredPosts },
         };
     });
 }
 
 const { tag } = Astro.params;
-const { originalTag, posts } = Astro.props;
+const { posts } = Astro.props;
 ---
 
-<BaseLayout title={`Tag: ${originalTag}`} description={`Articles regarding ${originalTag}`}>
-    <Header />
-    <main class="w-full max-w-4xl mx-auto px-6 py-24 bg-[#FDFDFD]">
-        <h1 class="text-3xl font-serif font-bold mb-12 border-b pb-4">
-            Tag: <span class="text-[#D4AF37]">#{originalTag}</span>
-        </h1>
-        
-        <ul class="space-y-8">
-            {
-                posts.map((post) => (
-                    <li class="border-b border-black/10 pb-4">
-                        <a href={`/blog/${post.slug}/`} class="block group">
-                            <h3 class="text-xl font-serif text-gray-900 group-hover:text-[#D4AF37] transition-colors">{post.data.title || 'Untitled'}</h3>
-                            <p class="text-sm font-mono text-gray-400 mt-2">
-                                {post.data.date ? <FormattedDate date={post.data.date} /> : ''}
-                            </p>
-                        </a>
-                    </li>
-                ))
-            }
+<BaseLayout title={# + tag} description={All articles tagged with  + tag}>
+    <div class="tag-page">
+        <h1>Posts tagged with "{tag}"</h1>
+        <ul>
+            {posts.map((post) => (
+                <li><a href={/blog/ + post.slug + /}>{post.data.title}</a></li>
+            ))}
         </ul>
-        
-        <div class="mt-12">
-            <a href="/" class="text-sm font-mono tracking-widest text-gray-400 hover:text-black transition-colors uppercase">← Back to Home</a>
-        </div>
-    </main>
-    <Footer />
+    </div>
 </BaseLayout>
