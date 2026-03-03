@@ -97,19 +97,19 @@ class Orchestrator:
             state = self.critic.evaluate_article(state)
 
             if state.is_approved:
-                print("   [Orchestrator] 監査クリア → ファイル保存")
+                print("   [Orchestrator] Audit passed → saving file")
                 self._save_to_astro(state)
                 return True
             else:
                 state.retry_count += 1
-                print(f"   [Orchestrator] 差し戻し: {state.critic_feedback}")
+                print(f"   [Orchestrator] Rejected: {state.critic_feedback}")
                 if state.retry_count < max_retries:
                     backoff = RETRY_BACKOFF[min(state.retry_count - 1, len(RETRY_BACKOFF) - 1)]
-                    print(f"   [{backoff}秒バックオフ中...]")
+                    print(f"   [Backoff {backoff}s...]")
                     time.sleep(backoff)
 
-        print(f"\n[Orchestrator] {max_retries}回の試行で基準未達。記事を破棄します。")
-        return False
+        print(f"\n[Orchestrator] Failed after {max_retries} attempts. Discarding.")
+        return False, state
 
     def _save_to_astro(self, state: ArticleState):
         """
