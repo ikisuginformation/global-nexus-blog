@@ -1,10 +1,10 @@
----
+﻿---
 title: "The Silent Colleague: How AI Is Quietly Rewriting the Rules of Work"
 description: "Artificial intelligence is not replacing remote workers — it is becoming the most capable partner they have ever had. A deep look at the tools, the shifts in cognition, and the professional advantages available right now to those paying attention."
 date: "2026-02-27"
 readTime: "9 min read"
 tags: ["Technology", "Productivity", "Artificial Intelligence", "Remote Work"]
-layout: "../layouts/BlogPost.astro"
+
 ---
 
 There is a particular kind of silence in remote work. No open-plan clatter, no shoulder taps, no serendipitous corridor conversations. For years, that silence felt like a deficit — the price of autonomy, the friction of distributed teams. Then something changed. The silence began to fill.

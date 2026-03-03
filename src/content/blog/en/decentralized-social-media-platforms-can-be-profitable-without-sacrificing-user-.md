@@ -1,4 +1,4 @@
----
+﻿---
 title: "Decentralized Social Media Platforms Can Be Profitable Without Sacrificing User Data"
 description: "A contrarian view on the future of decentralized social media platforms, highlighting innovative business models that prioritize user data privacy"
 date: 2026-03-03T16:15:29+09:00

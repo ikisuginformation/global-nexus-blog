@@ -1,4 +1,4 @@
----
+﻿---
 title: "Cuidados de Ciberseguridad para Trabajadores Remotos"
 description: "Consejos y trucos para proteger su conexión a Internet mientras trabaja desde casa."
 date: 2026-02-26T23:36:35+09:00

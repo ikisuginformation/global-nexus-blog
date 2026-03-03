@@ -1,4 +1,4 @@
----
+﻿---
 title: "¿La seguridad cibernética es solo una ilusión para freelancers?"
 description: "Descubra por qué la seguridad cibernética es esencial para proteger la reputación de un freelancer"
 date: 2026-03-03T16:38:12+09:00
