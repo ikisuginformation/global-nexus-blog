@@ -1,4 +1,4 @@
-# ai_core/writer_agent.py
+﻿# ai_core/writer_agent.py
 #
 # Writer Agent — Perspective Architecture
 #
