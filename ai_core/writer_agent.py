@@ -70,87 +70,74 @@ Previous attempt rejected. Reason: {state.critic_feedback[:MAX_FEEDBACK_CHARS]}
 Fix this specifically in your rewrite.
 """
 
-        # 5. Perspective block
+        # 5. Perspective block (Positive Constraintsに変換)
         if contrarian_angle and unique_thesis:
             perspective_block = f"""
-[PERSPECTIVE ARCHITECTURE — EDITORIAL MANDATE]
+<editorial_mandate>
 Contrarian Angle: {contrarian_angle}
 Unique Thesis: {unique_thesis}
 Target Reader: {target_audience}
 
-RULES:
-- First paragraph MUST STATE this thesis. Not after background. NOW.
-- Every H2 section must ADVANCE or DEFEND this thesis.
-- Comparison table: "conventional wisdom" (left, ❌) vs "thesis position" (right, ✅)
-- FAQ: answer the 3 strongest OBJECTIONS to your thesis
-- Do NOT write "on the other hand" or "it depends" — take a position
-- Be wrong confidently rather than right vaguely.
+Drive the narrative using this specific thesis. 
+Open immediately with a sharp claim establishing the thesis.
+Structure every H2 section as a supporting argument for the thesis.
+Include a Comparison Table contrasting 'Conventional Wisdom' with the 'Thesis Position'.
+Address and dismantle the 3 strongest skeptical objections in the FAQ section.
+Maintain a highly opinionated, decisive tone throughout.
+</editorial_mandate>
 """
         else:
             perspective_block = """
-[PERSPECTIVE REQUIREMENT]
-Choose ONE non-obvious angle and defend it throughout.
-Do NOT write a balanced "pros and cons" piece — take a position in paragraph 1.
+<editorial_mandate>
+Select one non-obvious, highly opinionated angle and defend it decisively throughout the entire article. Open with a sharp claim.
+</editorial_mandate>
 """
 
         # 6. Research context
         research_block = ""
         if brief.key_facts or brief.abstract:
-            research_block = brief.to_prompt_context()
+            research_block = f"<research_context>\n{brief.to_prompt_context()}\n</research_context>"
 
-        # 7. Assemble prompt
+        # 7. Assemble prompt (XML & Context First)
         prompt = f"""
-You are an elite journalist writing for intelligent, skeptical readers.
-They have already read 50 articles on this topic. Make yours the last one they need.
+<role>
+You are an elite, authoritative journalist writing for highly intelligent, skeptical readers. 
+They demand information density and sharp insights. Make your article the definitive final word on the subject.
+</role>
 
-Topic: {state.topic}
-Target Language: {state.language}
-
-[LANGUAGE — NON-NEGOTIABLE]
+<target_language>
 {lang_instruction}
-ALL output fields (title, description, content_markdown) MUST be in {state.language}.
-
-{perspective_block}
+ALL internal processing and final outputs MUST be in {state.language}.
+</target_language>
 
 {research_block}
 
+{perspective_block}
+
 {feedback_instruction}
 
-[STRUCTURE]
+<instructions>
+1. TITLE: Embed the contrarian angle directly. Make it punchy and expensive-sounding.
+2. OPENING (first 100 words): Start with a specific, surprising fact or claim. Hook the reader instantly.
+3. BODY: Use short, impactful paragraphs. Emphasize the core idea in bold.
+4. COMPARISON TABLE: Use ❌ for popular belief and ✅ for the evidence-backed thesis.
+5. PROS & CONS: Provide genuine, hard-hitting analysis.
+6. FAQ: Provide direct, unflinching responses to skeptical objections.
+7. CLOSING: End with a single, sharp, declarative sentence that leaves a lasting impact.
+</instructions>
 
-1. TITLE: Must embed the contrarian angle.
-   GOOD: "Why NordVPN Is Making Your Privacy Worse (Not Better)"
-   BAD:  "Top 5 VPNs for Privacy in 2026"
+<output_format>
+You must respond strictly in JSON.
+CRITICAL: To ensure maximum logical rigor, you MUST output your internal thought process FIRST under the "editorial_strategy" key. Plan how you will weave the research into your thesis before writing the content.
 
-2. OPENING (first 100 words):
-   - State the thesis immediately with a specific, surprising claim
-   - NEVER start with "In today's world...", "Have you ever wondered...", "In this article..."
-
-3. BODY SECTIONS:
-   - Short paragraphs (1-3 sentences)
-   - **Bold** the most important idea per section
-   - H2 headings read like arguments, not labels
-
-4. COMPARISON TABLE (H2: thesis vs conventional wisdom)
-   - ❌ column: standard advice / popular belief
-   - ✅ column: what evidence / the thesis actually shows
-   - At least 4 rows
-
-5. PROS & CONS (H3): Genuine balance — do NOT soften the cons.
-
-6. FAQ (H2 in {state.language}):
-   - 3 objections a skeptical reader would raise
-   - Direct, engaged responses — no deflection
-
-7. CLOSING: One sharp sentence. No "In conclusion."
-
-[OUTPUT — VALID JSON ONLY, NO PREAMBLE, NO FENCES]
 {{
+    "editorial_strategy": "Your step-by-step logical plan and argument structure in {state.language}",
     "title": "Thesis-driven title in {state.language}",
     "description": "Max 120 chars stating the thesis, in {state.language}",
     "content_markdown": "Full article in Markdown, in {state.language}",
     "tags": ["tag1", "tag2", "tag3"]
 }}
+</output_format>
 """
 
         payload = {
@@ -158,11 +145,7 @@ ALL output fields (title, description, content_markdown) MUST be in {state.langu
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        f"You are an authoritative journalist writing in {state.language}. "
-                        "You take strong editorial positions and defend them. "
-                        "Output only valid JSON. No preamble, no fences."
-                    )
+                    "content": "You are an elite autonomous journalist. You follow XML instructions perfectly and output only valid JSON."
                 },
                 {"role": "user", "content": prompt}
             ],
