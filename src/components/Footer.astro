@@ -1,30 +1,60 @@
 ---
-const today = new Date();
+// src/components/Footer.astro
+// Minimal footer — matches Abyss palette. No CSS variable dependencies from the old theme.
+const year = new Date().getFullYear();
 ---
-<div style="text-align: center; margin-top: 2rem; font-size: 0.8rem;">
-    <a href="/privacy" style="color: #666; text-decoration: underline;">Privacy Policy & Disclaimer</a>
-</div>
-<footer style="padding: 2em 1em 6em 1em; background: linear-gradient(var(--gray-gradient)) no-repeat; color: rgb(var(--gray)); text-align: center;">
-	&copy; {today.getFullYear()} Global Nexus Media. All rights reserved.
+
+<footer class="gn-site-footer">
+    <div class="gn-site-footer-inner">
+        <span class="footer-copy">© {year} Global Nexus Media</span>
+        <nav class="footer-nav" aria-label="Footer navigation">
+            <a href="/about">About</a>
+            <a href="/privacy">Legal</a>
+        </nav>
+    </div>
 </footer>
+
 <style>
-	footer {
-		padding: 2em 1em 6em 1em;
-		background: linear-gradient(var(--gray-gradient)) no-repeat;
-		color: rgb(var(--gray));
-		text-align: center;
-	}
-	.social-links {
-		display: flex;
-		justify-content: center;
-		gap: 1em;
-		margin-top: 1em;
-	}
-	.social-links a {
-		text-decoration: none;
-		color: rgb(var(--gray));
-	}
-	.social-links a:hover {
-		color: rgb(var(--gray-dark));
-	}
+    .gn-site-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 2rem clamp(1.5rem, 5vw, 3rem) 5rem;
+        /* 5rem bottom padding ensures content clears the mobile bottom nav */
+    }
+
+    .gn-site-footer-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .footer-copy {
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.30);
+    }
+
+    .footer-nav {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .footer-nav a {
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.30);
+        text-decoration: none;
+        transition: color 0.25s;
+    }
+
+    .footer-nav a:hover {
+        color: rgba(185, 158, 110, 0.65);
+    }
 </style>

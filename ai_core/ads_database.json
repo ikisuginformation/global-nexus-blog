@@ -12,7 +12,7 @@
     "category": "Security, VPN, Privacy, Tech, Remote Work",
     "product_name": "NordVPN",
     "description": "The world's leading VPN service. Protect your privacy and access global content.",
-    "affiliate_link": "[https://go.nordvpn.net/aff_c?offer_id=15&aff_id=141985]",
+    "affiliate_link": "https://go.nordvpn.net/aff_c?offer_id=15&aff_id=141985",
     "languages": ["en", "ja", "es"]
   },
   {
@@ -20,7 +20,7 @@
     "category": "Gadgets, Books, Tech, Desk Setup, Productivity",
     "product_name": "Amazon Recommended Gear",
     "description": "Check out recommended tech gear and books on Amazon.",
-    "affiliate_link": "https://www.amazon.com/shop/[globalnexus0f-20]?tag=[globalnexus0f-20]",
+    "affiliate_link": "https://www.amazon.com/?tag=globalnexus0f-20",
     "languages": ["en", "es"]
   }
 ]

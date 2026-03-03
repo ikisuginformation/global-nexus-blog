@@ -1,26 +1,20 @@
 ---
+// src/pages/blog/tag/[tag].astro
 import { getCollection } from 'astro:content';
-// ★階層エラーを防ぐため、一番確実なパス指定に変更
-import BaseLayout from '../../../../src/layouts/BaseLayout.astro';
-import Header from '../../../../src/components/Header.astro';
-import Footer from '../../../../src/components/Footer.astro';
-import FormattedDate from '../../../../src/components/FormattedDate.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import FormattedDate from '../../../components/FormattedDate.astro';
 
 export async function getStaticPaths() {
     const allPosts = await getCollection('blog');
-    
-    // タグを収集
     const uniqueTags = [...new Set(allPosts.flatMap((post) => post.data.tags || []))];
 
     return uniqueTags.map((tag) => {
-        const filteredPosts = allPosts.filter((post) => 
-            (post.data.tags || []).includes(tag)
-        ).sort(
-            (a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0)
-        );
+        const filteredPosts = allPosts
+            .filter((post) => (post.data.tags || []).includes(tag))
+            .sort((a, b) => (b.data.date?.valueOf() || 0) - (a.data.date?.valueOf() || 0));
 
         return {
-            params: { tag: tag },
+            params: { tag },
             props: { posts: filteredPosts },
         };
     });
@@ -30,31 +24,174 @@ const { tag } = Astro.params;
 const { posts } = Astro.props;
 ---
 
-<BaseLayout title={`Tag: ${tag}`} description={`Articles regarding ${tag}`}>
-    <Header />
-    <main class="w-full max-w-4xl mx-auto px-6 py-24 bg-[#FDFDFD]">
-        <h1 class="text-3xl font-serif font-bold mb-12 border-b pb-4">
-            Tag: <span class="text-[#D4AF37]">#{tag}</span>
-        </h1>
-        
-        <ul class="space-y-8">
-            {
-                posts.map((post) => (
-                    <li class="border-b border-black/10 pb-4">
-                        <a href={`/blog/${post.slug}/`} class="block group">
-                            <h3 class="text-xl font-serif text-gray-900 group-hover:text-[#D4AF37] transition-colors">{post.data.title || 'Untitled'}</h3>
-                            <p class="text-sm font-mono text-gray-400 mt-2">
-                                {post.data.date ? <FormattedDate date={post.data.date} /> : ''}
-                            </p>
-                        </a>
-                    </li>
-                ))
-            }
+<BaseLayout title={`#${tag}`} description={`All articles tagged with ${tag}`}>
+
+    <div class="tag-page">
+
+        <header class="tag-header">
+            <div class="tag-eyebrow">Tag</div>
+            <h1 class="tag-title">#{tag}</h1>
+            <p class="tag-count">{posts.length} {posts.length === 1 ? 'article' : 'articles'}</p>
+        </header>
+
+        <hr class="tag-rule" />
+
+        <ul class="tag-list" role="list">
+            {posts.map((post) => (
+                <li class="tag-item">
+                    <a href={`/blog/${post.slug}/`} class="tag-link">
+                        <span class="tag-item-date">
+                            {post.data.date ? <FormattedDate date={post.data.date} /> : '—'}
+                        </span>
+                        <h2 class="tag-item-title">{post.data.title || 'Untitled'}</h2>
+                        {post.data.description && (
+                            <p class="tag-item-desc">{post.data.description}</p>
+                        )}
+                    </a>
+                </li>
+            ))}
         </ul>
-        
-        <div class="mt-12">
-            <a href="/" class="text-sm font-mono tracking-widest text-gray-400 hover:text-black transition-colors uppercase">← Back to Home</a>
+
+        <div class="tag-back">
+            <a href="/">← All writing</a>
         </div>
-    </main>
-    <Footer />
+
+    </div>
+
 </BaseLayout>
+
+<style>
+    .tag-page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: clamp(5rem, 12vh, 8rem) clamp(1.5rem, 5vw, 3rem) clamp(4rem, 8vh, 6rem);
+    }
+
+    .tag-header {
+        margin-bottom: 3rem;
+    }
+
+    .tag-eyebrow {
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.50);
+        margin-bottom: 0.75rem;
+    }
+
+    .tag-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: clamp(2.5rem, 6vw, 4.5rem);
+        font-weight: 900;
+        font-style: italic;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        color: rgba(185, 158, 110, 0.85);
+        text-shadow: none;
+        margin-bottom: 1rem;
+    }
+
+    .tag-count {
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.70rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.40);
+    }
+
+    .tag-rule {
+        border: none;
+        height: 1px;
+        background: rgba(255,255,255,0.06);
+        margin-bottom: 3rem;
+    }
+
+    .tag-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .tag-item {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .tag-link {
+        display: block;
+        padding: 2rem 0;
+        text-decoration: none;
+        color: inherit;
+        transition: padding-left 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .tag-link:hover {
+        padding-left: 1rem;
+    }
+
+    .tag-item-date {
+        display: block;
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.40);
+        margin-bottom: 0.65rem;
+        transition: color 0.3s;
+    }
+
+    .tag-link:hover .tag-item-date {
+        color: rgba(185, 158, 110, 0.60);
+    }
+
+    .tag-item-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+        font-weight: 700;
+        font-style: italic;
+        line-height: 1.2;
+        color: rgba(210, 203, 193, 0.85);
+        text-shadow: none;
+        margin-bottom: 0.5rem;
+        transition: color 0.3s;
+    }
+
+    .tag-link:hover .tag-item-title {
+        color: rgba(230, 224, 215, 1.0);
+    }
+
+    .tag-item-desc {
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+        line-height: 1.6;
+        color: rgba(140, 134, 126, 0.50);
+        transition: color 0.3s;
+    }
+
+    .tag-link:hover .tag-item-desc {
+        color: rgba(155, 148, 138, 0.68);
+    }
+
+    .tag-back {
+        margin-top: 4rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .tag-back a {
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.68rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.40);
+        text-decoration: none;
+        transition: color 0.25s;
+    }
+
+    .tag-back a:hover {
+        color: rgba(185, 158, 110, 0.70);
+    }
+</style>

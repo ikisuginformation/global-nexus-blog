@@ -1,0 +1,11 @@
+# ai_core/requirements.txt
+# Install with: pip install -r ai_core/requirements.txt
+
+# HTTP
+requests>=2.31.0
+
+# RSS parsing (used by ResearcherAgent for Reddit/HN fallback)
+feedparser>=6.0.10
+
+# Already available in Python stdlib (no install needed):
+#   json, re, os, time, datetime, subprocess, xml.etree.ElementTree, urllib.parse

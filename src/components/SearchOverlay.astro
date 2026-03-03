@@ -1,11 +1,10 @@
 ---
 // src/components/SearchOverlay.astro
-// "The Void Search" - 絶対にクラッシュしない堅牢な検索UI
+// "The Void Search" — dark system version, matches Abyss palette
 
 import { getCollection } from 'astro:content';
 const posts = await getCollection('blog');
 
-// AIがどんな変なデータを生成しても耐えられるようにする安全処理
 const searchData = posts.map(post => {
     let safeDate = "Unknown";
     try {
@@ -29,77 +28,182 @@ const searchData = posts.map(post => {
 });
 ---
 
-<div id="search-overlay" class="fixed inset-0 z-[100] bg-[#FDFDFD]/95 backdrop-blur-xl opacity-0 pointer-events-none transition-all duration-700 flex flex-col">
-    
-    <div class="absolute top-0 right-0 p-8 md:p-12 z-10">
-        <button id="close-search-btn" class="text-[10px] font-mono tracking-[0.3em] uppercase text-black hover:text-[#D4AF37] transition-colors flex items-center gap-4 group">
-            <span class="w-8 h-[1px] bg-black group-hover:bg-[#D4AF37] transition-colors"></span>
+<div id="search-overlay" class="search-overlay">
+
+    <div class="search-close-wrap">
+        <button id="close-search-btn" class="search-close" aria-label="Close search">
+            <span class="search-close-line" aria-hidden="true"></span>
             Close
         </button>
     </div>
 
-    <div class="w-full px-[10vw] pt-[20vh] pb-12 border-b border-black/10 shrink-0">
-        <span class="text-[9px] font-mono tracking-[0.4em] uppercase text-gray-400 mb-8 block">Search Archive</span>
-        <input 
-            type="text" 
-            id="search-input" 
-            placeholder="Type to explore..." 
-            class="w-full bg-transparent text-5xl md:text-8xl font-serif font-light text-black placeholder:text-black/10 outline-none focus:ring-0 border-none p-0"
+    <div class="search-input-wrap">
+        <span class="search-label">Search Archive</span>
+        <input
+            type="text"
+            id="search-input"
+            placeholder="Type to explore..."
+            class="search-input"
             autocomplete="off"
         />
     </div>
 
-    <div class="w-full px-[10vw] py-12 overflow-y-auto flex-grow">
-        <div id="search-results" class="flex flex-col gap-12 max-w-4xl">
-            </div>
+    <div class="search-results-wrap">
+        <div id="search-results" class="search-results"></div>
     </div>
+
 </div>
+
+<style>
+    .search-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        background: rgba(3, 2, 5, 0.97);
+        backdrop-filter: blur(24px) saturate(120%);
+        -webkit-backdrop-filter: blur(24px) saturate(120%);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .search-overlay.is-open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .search-close-wrap {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: clamp(1.5rem, 4vw, 3rem);
+    }
+
+    .search-close {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.30em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.50);
+        transition: color 0.25s;
+        padding: 0;
+    }
+
+    .search-close:hover { color: rgba(185, 158, 110, 0.80); }
+
+    .search-close-line {
+        display: block;
+        width: 2rem;
+        height: 1px;
+        background: currentColor;
+        transition: width 0.25s;
+    }
+
+    .search-input-wrap {
+        padding: clamp(4rem, 15vh, 8rem) clamp(1.5rem, 10vw, 8rem) clamp(2rem, 4vh, 3rem);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        flex-shrink: 0;
+    }
+
+    .search-label {
+        display: block;
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.40em;
+        text-transform: uppercase;
+        color: rgba(140, 134, 126, 0.40);
+        margin-bottom: 1.5rem;
+    }
+
+    .search-input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: clamp(2.5rem, 7vw, 6rem);
+        font-weight: 300;
+        font-style: italic;
+        color: rgba(230, 224, 215, 0.90);
+        caret-color: rgba(185, 158, 110, 0.80);
+        padding: 0;
+    }
+
+    .search-input::placeholder {
+        color: rgba(140, 134, 126, 0.18);
+    }
+
+    .search-results-wrap {
+        padding: clamp(2rem, 4vh, 3rem) clamp(1.5rem, 10vw, 8rem);
+        overflow-y: auto;
+        flex-grow: 1;
+    }
+
+    .search-results {
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+        max-width: 800px;
+    }
+</style>
 
 <script define:vars={{ searchData }}>
     document.addEventListener('DOMContentLoaded', () => {
-        const overlay = document.getElementById('search-overlay');
-        const openBtns = document.querySelectorAll('.open-search-btn'); 
-        const closeBtn = document.getElementById('close-search-btn');
+        const overlay    = document.getElementById('search-overlay');
+        const openBtns   = document.querySelectorAll('.open-search-btn');
+        const closeBtn   = document.getElementById('close-search-btn');
         const searchInput = document.getElementById('search-input');
-        const resultsContainer = document.getElementById('search-results');
+        const resultsEl  = document.getElementById('search-results');
 
-        openBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                overlay.classList.remove('opacity-0', 'pointer-events-none');
-                setTimeout(() => searchInput.focus(), 100); 
-                renderResults(searchData);
-            });
-        });
+        const openSearch = () => {
+            overlay.classList.add('is-open');
+            setTimeout(() => searchInput.focus(), 80);
+            renderResults(searchData);
+        };
 
         const closeSearch = () => {
-            overlay.classList.add('opacity-0', 'pointer-events-none');
-            searchInput.value = ''; 
+            overlay.classList.remove('is-open');
+            searchInput.value = '';
         };
-        closeBtn.addEventListener('click', closeSearch);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeSearch();
-        });
 
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = searchData.filter(post => 
-                post.title.toLowerCase().includes(query) || 
-                post.description.toLowerCase().includes(query) ||
-                post.tags.some(tag => typeof tag === 'string' && tag.toLowerCase().includes(query))
-            );
+        openBtns.forEach(btn => btn.addEventListener('click', e => {
+            e.preventDefault();
+            openSearch();
+        }));
+
+        closeBtn.addEventListener('click', closeSearch);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
+
+        searchInput.addEventListener('input', e => {
+            const q = e.target.value.toLowerCase().trim();
+            const filtered = q
+                ? searchData.filter(p =>
+                    p.title.toLowerCase().includes(q) ||
+                    p.description.toLowerCase().includes(q) ||
+                    p.tags.some(t => typeof t === 'string' && t.toLowerCase().includes(q))
+                  )
+                : searchData;
             renderResults(filtered);
         });
 
         function renderResults(posts) {
             if (posts.length === 0) {
-                resultsContainer.innerHTML = '<p class="text-gray-400 font-mono text-sm tracking-widest uppercase">No results found in the void.</p>';
+                resultsEl.innerHTML = `<p style="font-family:'EB Garamond',serif;font-size:0.68rem;letter-spacing:0.30em;text-transform:uppercase;color:rgba(140,134,126,0.35);">Nothing found in the archive.</p>`;
                 return;
             }
-            resultsContainer.innerHTML = posts.map(post => `
-                <a href="/blog/${post.slug}/" class="group block border-l border-black/10 pl-6 hover:border-[#D4AF37] transition-colors">
-                    <span class="text-[9px] font-mono tracking-[0.2em] uppercase text-gray-400 block mb-2">${post.date}</span>
-                    <h3 class="text-2xl md:text-3xl font-serif font-light text-black group-hover:italic group-hover:text-[#D4AF37] transition-all duration-300">
+            resultsEl.innerHTML = posts.map(post => `
+                <a href="/blog/${post.slug}/" style="display:block;text-decoration:none;padding-bottom:2rem;border-bottom:1px solid rgba(255,255,255,0.05);transition:padding-left 0.4s cubic-bezier(0.23,1,0.32,1);"
+                   onmouseover="this.style.paddingLeft='0.75rem'" onmouseout="this.style.paddingLeft='0'">
+                    <span style="display:block;font-family:'EB Garamond',serif;font-size:0.63rem;letter-spacing:0.25em;text-transform:uppercase;color:rgba(140,134,126,0.40);margin-bottom:0.6rem;">${post.date}</span>
+                    <h3 style="font-family:'Playfair Display',serif;font-size:clamp(1.2rem,2.5vw,1.8rem);font-weight:700;font-style:italic;color:rgba(210,203,193,0.88);text-shadow:none;margin:0;">
                         ${post.title}
                     </h3>
                 </a>

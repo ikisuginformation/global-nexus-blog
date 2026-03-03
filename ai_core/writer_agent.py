@@ -1,86 +1,169 @@
 # ai_core/writer_agent.py
+#
+# Writer Agent — Perspective Architecture
+#
+# The core problem with AI content farms: they generate the same article
+# everyone else generates. The fix is forcing the model to commit to a
+# SPECIFIC THESIS before writing.
+#
+# Perspective Architecture:
+#   1. Director provides contrarian_angle and unique_thesis
+#   2. Writer OPENS with the thesis (not background, not definitions)
+#   3. Writer DEFENDS the thesis — not "on one hand / on the other"
+#   4. Comparison table: conventional view vs. thesis view
+#   5. FAQ answers the strongest objections to the thesis
+#   6. Real research data (from ResearcherAgent) grounds every claim
+
 import requests
 import json
 from .models import ArticleState
 from .config import OLLAMA_HOST, OLLAMA_MODEL
+from .researcher_agent import ResearcherAgent, ResearchBrief
+
+LANGUAGE_INSTRUCTIONS = {
+    "ja": "日本語で執筆すること。翻訳ではなく、日本語ネイティブとして最初から日本語で思考・執筆すること。",
+    "es": "Escribe en español nativo. No traduzcas desde el inglés — piensa y redacta directamente en español.",
+    "en": "Write in English. Use a confident, direct editorial voice. No hedging.",
+    "zh": "用中文写作。不要翻译，直接用中文思考和写作。",
+    "ko": "한국어로 작성하세요. 번역이 아닌, 처음부터 한국어로 사고하고 작성하세요.",
+    "fr": "Écris en français natif. Ne traduis pas depuis l'anglais — rédige directement en français.",
+    "de": "Schreibe auf Deutsch. Nicht übersetzen — direkt auf Deutsch denken und schreiben.",
+    "pt": "Escreve em português nativo. Não traduzas do inglês — pensa e rediges diretamente em português.",
+    "ar": "اكتب باللغة العربية. لا تترجم من الإنجليزية — فكر واكتب مباشرة بالعربية.",
+    "hi": "हिंदी में लिखें। अंग्रेज़ी से अनुवाद न करें — सीधे हिंदी में सोचें और लिखें।",
+}
+
+MAX_FEEDBACK_CHARS = 300
+
 
 class WriterAgent:
     def __init__(self):
         self.host = OLLAMA_HOST
         self.model = OLLAMA_MODEL
+        self.researcher = ResearcherAgent()
 
     def generate_article(self, state: ArticleState) -> ArticleState:
         """
-        Ollama APIを直接叩いて記事を生成する（公式ライブラリ不使用版）
+        Generates a blog article with a specific thesis and real research data.
         """
-        
-        # 1. 監査役（Critic）からのフィードバックをプロンプトに注入
+
+        # 1. Fetch real research data (never blocks — degrades gracefully)
+        brief: ResearchBrief = self.researcher.research(state.topic, state.language)
+
+        # 2. Extract perspective from strategy (set by Orchestrator from Director output)
+        contrarian_angle = getattr(state, 'contrarian_angle', '')
+        unique_thesis    = getattr(state, 'unique_thesis', '')
+        target_audience  = getattr(state, 'target_audience', 'a curious, skeptical reader')
+
+        # 3. Language instruction
+        lang_instruction = LANGUAGE_INSTRUCTIONS.get(
+            state.language,
+            f"Write in {state.language}. Think and write natively — do not translate."
+        )
+
+        # 4. Feedback injection (retry path)
         feedback_instruction = ""
-        if state.retry_count > 0:
+        if state.retry_count > 0 and state.critic_feedback:
             feedback_instruction = f"""
-            [CRITICAL FEEDBACK FROM AUDITOR - YOU MUST FIX THIS]
-            Previous attempt failed. Reason: {state.critic_feedback}
-            Please strictly address this issue in this rewrite.
-            """
+[AUDITOR FEEDBACK — MUST FIX]
+Previous attempt rejected. Reason: {state.critic_feedback[:MAX_FEEDBACK_CHARS]}
+Fix this specifically in your rewrite.
+"""
 
-        # 2. メインプロンプトの構築
+        # 5. Perspective block
+        if contrarian_angle and unique_thesis:
+            perspective_block = f"""
+[PERSPECTIVE ARCHITECTURE — EDITORIAL MANDATE]
+Contrarian Angle: {contrarian_angle}
+Unique Thesis: {unique_thesis}
+Target Reader: {target_audience}
+
+RULES:
+- First paragraph MUST STATE this thesis. Not after background. NOW.
+- Every H2 section must ADVANCE or DEFEND this thesis.
+- Comparison table: "conventional wisdom" (left, ❌) vs "thesis position" (right, ✅)
+- FAQ: answer the 3 strongest OBJECTIONS to your thesis
+- Do NOT write "on the other hand" or "it depends" — take a position
+- Be wrong confidently rather than right vaguely.
+"""
+        else:
+            perspective_block = """
+[PERSPECTIVE REQUIREMENT]
+Choose ONE non-obvious angle and defend it throughout.
+Do NOT write a balanced "pros and cons" piece — take a position in paragraph 1.
+"""
+
+        # 6. Research context
+        research_block = ""
+        if brief.key_facts or brief.abstract:
+            research_block = brief.to_prompt_context()
+
+        # 7. Assemble prompt
         prompt = f"""
-        You are an elite tech journalist and authoritative subject-matter expert.
-        Write a high-quality, in-depth blog post in strictly JSON format based on the following topic.
+You are an elite journalist writing for intelligent, skeptical readers.
+They have already read 50 articles on this topic. Make yours the last one they need.
 
-        Topic: {state.topic}
-        Target Language: English
+Topic: {state.topic}
+Target Language: {state.language}
 
-        {feedback_instruction}
+[LANGUAGE — NON-NEGOTIABLE]
+{lang_instruction}
+ALL output fields (title, description, content_markdown) MUST be in {state.language}.
 
-        [CONTENT REQUIREMENTS — follow this structure precisely]
+{perspective_block}
 
-        1. OPENING HOOK (H1 title + first paragraph):
-           - Write a bold, counter-intuitive, or surprising title that makes the reader need to know more.
-           - The opening paragraph must immediately establish why this topic matters RIGHT NOW.
-           - Keep it to 2-3 punchy sentences. No fluff.
+{research_block}
 
-        2. VISUAL RHYTHM throughout the article:
-           - Use extremely short paragraphs (1-3 sentences each).
-           - Use **bold text** to surface the most important ideas for skimmers.
-           - Every H2/H3 should feel like a revelation, not a label.
+{feedback_instruction}
 
-        3. COMPARISON TABLE (required, under its own H2):
-           - Include a Markdown table contrasting the old/conventional approach vs. the better/modern approach.
-           - Use ❌ in the "Old Way" column and ✅ in the "New Way" column.
-           - At least 4 rows of meaningful, specific comparisons.
+[STRUCTURE]
 
-        4. HONEST PROS & CONS (required, under its own H3):
-           - Provide a bulleted Pros & Cons list.
-           - Be genuinely balanced. Real cons build real trust — don't omit them or soften them artificially.
+1. TITLE: Must embed the contrarian angle.
+   GOOD: "Why NordVPN Is Making Your Privacy Worse (Not Better)"
+   BAD:  "Top 5 VPNs for Privacy in 2026"
 
-        5. FAQ SECTION (required, under its own H2 titled "Frequently Asked Questions"):
-           - Include exactly 3 questions that a skeptical, intelligent reader would actually ask.
-           - Answers must be direct and substantive — no vague non-answers.
+2. OPENING (first 100 words):
+   - State the thesis immediately with a specific, surprising claim
+   - NEVER start with "In today's world...", "Have you ever wondered...", "In this article..."
 
-        6. CLOSING:
-           - End with a sharp, thought-provoking question or a single bold takeaway statement.
-           - Do NOT use transitions like "In conclusion" or "To summarize".
+3. BODY SECTIONS:
+   - Short paragraphs (1-3 sentences)
+   - **Bold** the most important idea per section
+   - H2 headings read like arguments, not labels
 
-        [FORMAT RULES]
-        1. Output MUST be a valid JSON object. No markdown formatting outside the string values.
-        2. The "content_markdown" must use H2 (##) and H3 (###) tags.
-        3. Do NOT include any introductory text or explanations. Only the JSON.
-        4. Write the entire article body in English, regardless of the topic language.
+4. COMPARISON TABLE (H2: thesis vs conventional wisdom)
+   - ❌ column: standard advice / popular belief
+   - ✅ column: what evidence / the thesis actually shows
+   - At least 4 rows
 
-        [JSON STRUCTURE]
-        {{
-            "title": "Compelling, specific English title",
-            "description": "SEO description max 120 chars, in English",
-            "content_markdown": "Full article body in Markdown, in English",
-            "tags": ["tag1", "tag2"]
-        }}
-        """
+5. PROS & CONS (H3): Genuine balance — do NOT soften the cons.
+
+6. FAQ (H2 in {state.language}):
+   - 3 objections a skeptical reader would raise
+   - Direct, engaged responses — no deflection
+
+7. CLOSING: One sharp sentence. No "In conclusion."
+
+[OUTPUT — VALID JSON ONLY, NO PREAMBLE, NO FENCES]
+{{
+    "title": "Thesis-driven title in {state.language}",
+    "description": "Max 120 chars stating the thesis, in {state.language}",
+    "content_markdown": "Full article in Markdown, in {state.language}",
+    "tags": ["tag1", "tag2", "tag3"]
+}}
+"""
 
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": "You are an expert tech journalist. You output only valid JSON, exactly as instructed. No preamble, no explanation."},
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are an authoritative journalist writing in {state.language}. "
+                        "You take strong editorial positions and defend them. "
+                        "Output only valid JSON. No preamble, no fences."
+                    )
+                },
                 {"role": "user", "content": prompt}
             ],
             "format": "json",
@@ -88,38 +171,35 @@ class WriterAgent:
         }
 
         try:
-            print(f"   ...Ollama ({self.model}) に執筆リクエスト送信中...")
-            
-            response = requests.post(f"{self.host}/api/chat", json=payload)
-            response.raise_for_status() 
-            
-            result_json = response.json()
-            content_text = result_json.get("message", {}).get("content", "")
+            print(f"   ...Writer: {self.model} へ送信 "
+                  f"[lang={state.language}, facts={len(brief.key_facts)}]...")
 
-            # 3. OllamaのJSON揺らぎ（マークダウンブロック等）をクレンジング
-            content_text = content_text.strip()
-            if content_text.startswith("```json"):
-                content_text = content_text[7:]
-            if content_text.startswith("```"):
-                content_text = content_text[3:]
+            response = requests.post(
+                f"{self.host}/api/chat", json=payload, timeout=120
+            )
+            response.raise_for_status()
+
+            content_text = response.json().get("message", {}).get("content", "").strip()
+
+            for fence in ("```json", "```"):
+                if content_text.startswith(fence):
+                    content_text = content_text[len(fence):]
             if content_text.endswith("```"):
                 content_text = content_text[:-3]
             content_text = content_text.strip()
 
-            # JSONテキストをPythonの辞書に変換
             data = json.loads(content_text)
-            
-            # ArticleStateに生成結果を格納
-            state.title = data.get("title", f"Draft: {state.topic}")
-            state.description = data.get("description", "")
+
+            state.title            = data.get("title", f"Draft: {state.topic}")
+            state.description      = data.get("description", "")
             state.content_markdown = data.get("content_markdown", "")
-            state.tags = data.get("tags", ["AI", "Tech", "Web3"])
-            
+            state.tags             = data.get("tags", ["AI", "Tech"])
+
             return state
 
         except json.JSONDecodeError:
-            print(f"[Writer Error] Ollamaが不正なJSONを返しました。生の出力: {content_text[:100]}...")
+            print(f"   [Writer Error] 不正なJSON: {content_text[:120]}...")
             return state
         except Exception as e:
-            print(f"[Writer Error] 通信エラー: {e}")
+            print(f"   [Writer Error] 通信エラー: {e}")
             return state

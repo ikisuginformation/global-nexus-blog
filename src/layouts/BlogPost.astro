@@ -1,111 +1,609 @@
 ---
 // src/layouts/BlogPost.astro
-// "The Thesis" - 読むためだけに設計された、学術的かつ詩的な2カラムレイアウト
+// Individual article layout.
+//
+// Design principles (enforced, not decorative):
+//   • Zero text-shadow on body copy. Zero. None.
+//   • Headings: colour contrast only, no glow tricks.
+//   • Reading column: 680px max, generous margin, line-height 1.85.
+//   • Background: transparent → WebGL shows through. Glass panel only
+//     on the narrow prose column, not on the whole viewport.
+//   • Bionic Reading on <p> only. Headings are clean Playfair.
 
-import type { CollectionEntry } from 'astro:content';
-import BaseLayout from './BaseLayout.astro';
-import FormattedDate from '../components/FormattedDate.astro';
-import TopicScroller from '../components/TopicScroller.astro';
-import AffiliateBlock from '../components/AffiliateBlock.astro';
+import QuantumCanvas from '../components/QuantumCanvas.astro';
 
-// AIが生成したスポンサー情報も受け取れるように型を拡張
-type Props = CollectionEntry<'blog'>['data'] & {
-    sponsor_type?: 'TOOL' | 'BOOK' | 'SERVICE' | 'GEAR';
-    sponsor_title?: string;
-    sponsor_desc?: string;
-    sponsor_url?: string;
-};
+export interface Props {
+  title:       string;
+  description?: string;
+  date?:        string;
+  readTime?:    string;
+  tags?:        string[];
+}
 
-const { 
-    title, description, date, updatedDate, heroImage, language,
-    sponsor_type, sponsor_title, sponsor_desc, sponsor_url 
+const {
+  title,
+  description = '',
+  date,
+  readTime,
+  tags = [],
 } = Astro.props;
+
+let dateStr = '';
+if (date) {
+  try {
+    dateStr = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }).format(new Date(date));
+  } catch { dateStr = date; }
+}
 ---
 
-<BaseLayout title={title} description={description} image={heroImage}>
-    
-    <TopicScroller />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={description} />
+  <title>{title}</title>
 
-    <main class="w-full min-h-screen bg-[#FDFDFD] text-[#0A0A0A] selection:bg-[#D4AF37] selection:text-white">
-        
-        <article class="max-w-[1800px] mx-auto px-[5vw] pt-32 pb-48">
-            
-            <header class="mb-24 border-b border-black/10 pb-12">
-                <div class="flex flex-col gap-6">
-                    <div class="flex items-center gap-4 text-[10px] font-mono tracking-[0.3em] uppercase text-gray-400">
-                        <span>Nº 001</span>
-                        <span class="w-8 h-[1px] bg-gray-300"></span>
-                        <span>{language || 'GLOBAL'}</span>
-                    </div>
-                    
-                    <h1 class="text-5xl md:text-7xl lg:text-8xl font-serif font-black leading-[1.0] tracking-tighter max-w-6xl">
-                        {title}
-                    </h1>
-                </div>
-            </header>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
+    rel="stylesheet"
+  />
+</head>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                
-                <aside class="lg:col-span-3 lg:h-[calc(100vh-200px)] lg:sticky lg:top-32 flex flex-col gap-12 text-xs font-mono tracking-[0.1em] text-gray-500">
-                    
-                    <div class="flex flex-col gap-2">
-                        <span class="uppercase tracking-[0.3em] text-gray-300 mb-2">Published</span>
-                        <FormattedDate date={date} />
-                    </div>
+<body>
+  <!-- WebGL ground — fixed behind all content -->
+  <QuantumCanvas />
 
-                    <div class="flex flex-col gap-2">
-                        <span class="uppercase tracking-[0.3em] text-gray-300 mb-2">Description</span>
-                        <p class="font-sans font-normal leading-relaxed text-gray-600">
-                            {description}
-                        </p>
-                    </div>
+  <!-- Full-height dark scrim so prose is always readable -->
+  <!-- Not a white background. A dark one. -->
+  <div class="page-scrim" aria-hidden="true"></div>
 
-                    <div class="flex flex-col gap-2">
-                        <span class="uppercase tracking-[0.3em] text-gray-300 mb-2">Share</span>
-                        <div class="flex gap-4">
-                            <button class="hover:text-black transition-colors">X (Twitter)</button>
-                            <button class="hover:text-black transition-colors">Copy Link</button>
-                        </div>
-                    </div>
+  <!-- Back navigation — minimal, top-left, never in the way -->
+  <nav class="post-nav" aria-label="Site navigation">
+    <a href="/" class="back-link">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      <span>All writing</span>
+    </a>
+  </nav>
 
-                    <div class="hidden lg:block w-[1px] h-full bg-gradient-to-b from-black/10 to-transparent mt-8"></div>
-                </aside>
+  <!-- Article wrapper — the reading column -->
+  <article class="post-shell">
 
-                <div class="lg:col-span-8 lg:col-start-5">
-                    <div class="prose prose-xl prose-slate max-w-none
-                        prose-headings:font-serif prose-headings:text-black
-                        prose-p:font-sans prose-p:font-light prose-p:text-gray-800 prose-p:leading-[2.4] prose-p:mb-12
-                        prose-strong:font-medium prose-strong:text-black
-                        prose-a:text-[#D4AF37] prose-a:no-underline hover:prose-a:underline
-                        prose-blockquote:border-l-2 prose-blockquote:border-[#D4AF37] prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-500
-                        prose-li:marker:text-gray-300
-                    ">
-                        <slot />
-                    </div>
+    <!-- Glass panel contains the prose -->
+    <div class="post-glass">
 
-                    {sponsor_title && sponsor_url && (
-                        <div class="mt-32">
-                            <AffiliateBlock 
-                                type={sponsor_type || 'TOOL'}
-                                title={sponsor_title} 
-                                description={sponsor_desc || ''} 
-                                url={sponsor_url} 
-                            />
-                        </div>
-                    )}
-                </div>
+      <!-- Header block -->
+      <header class="post-header">
 
-            </div>
-        </article>
+        {tags.length > 0 && (
+          <div class="post-tags" role="list">
+            {tags.map(tag => (
+              <span class="post-tag" role="listitem">{tag}</span>
+            ))}
+          </div>
+        )}
 
-        <footer class="border-t border-black/5 py-24 text-center">
-            <a href="/" class="inline-flex flex-col items-center gap-4 group">
-                <span class="w-[1px] h-16 bg-gray-300 group-hover:bg-[#D4AF37] transition-colors duration-500"></span>
-                <span class="text-[10px] font-mono tracking-[0.4em] uppercase text-gray-400 group-hover:text-black transition-colors">
-                    Return to Void
-                </span>
-            </a>
-        </footer>
+        <h1 class="post-title">{title}</h1>
 
-    </main>
-</BaseLayout>
+        {description && (
+          <p class="post-description">{description}</p>
+        )}
+
+        {(dateStr || readTime) && (
+          <div class="post-meta">
+            {dateStr && <time datetime={date}>{dateStr}</time>}
+            {dateStr && readTime && <span class="meta-sep" aria-hidden="true">·</span>}
+            {readTime && <span>{readTime}</span>}
+          </div>
+        )}
+
+        <!-- Rule: one thin line, not a glowing gradient -->
+        <div class="post-rule" aria-hidden="true"></div>
+
+      </header>
+
+      <!-- Prose body — slot receives markdown/HTML -->
+      <div class="post-body">
+        <slot />
+      </div>
+
+      <!-- Footer: prev/next or back -->
+      <footer class="post-footer">
+        <a href="/" class="footer-back">← Return to all writing</a>
+      </footer>
+
+    </div>
+  </article>
+
+  <!-- Grain overlay — tactile -->
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+</body>
+</html>
+
+<style is:global>
+  /* ── Resets & tokens ─────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Abyss palette — matches BaseLayout exactly */
+    --c-void:       #030303;
+    --c-scrim:      rgba(3, 2, 5, 0.78);
+    --c-glass:      rgba(5, 4, 9, 0.72);
+    --c-glass-edge: rgba(255, 255, 255, 0.055);
+
+    /* Typography colours — no glow, pure contrast */
+    --c-heading:    rgba(230, 224, 215, 0.96);   /* warm off-white */
+    --c-body:       rgba(195, 188, 178, 0.82);   /* warm grey */
+    --c-muted:      rgba(140, 134, 126, 0.60);   /* secondary */
+    --c-accent:     rgba(185, 158, 110, 0.80);   /* antique gold — for links */
+    --c-rule:       rgba(255, 255, 255, 0.07);   /* barely visible */
+
+    /* Type */
+    --f-display:   'Playfair Display', Georgia, serif;
+    --f-body:      'EB Garamond', Georgia, serif;
+    --f-mono:      'Courier New', monospace;
+
+    /* Rhythm */
+    --col-width:   680px;
+    --col-pad:     clamp(1.5rem, 5vw, 4rem);
+  }
+
+  html {
+    background: var(--c-void);
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: transparent;
+    font-family: var(--f-body);
+    font-size: clamp(1.05rem, 1.6vw, 1.175rem);
+    line-height: 1.85;
+    color: var(--c-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Full-page dark scrim ─────────────────────────────────────────────────── */
+  /* This is NOT a white background. It darkens the WebGL so prose is legible. */
+  .page-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(3, 2, 5, 0.55) 0%,
+      rgba(3, 2, 5, 0.68) 40%,
+      rgba(3, 2, 5, 0.72) 100%
+    );
+  }
+
+  /* ── Grain ───────────────────────────────────────────────────────────────── */
+  .grain-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 256px;
+  }
+
+  /* ── Back nav ────────────────────────────────────────────────────────────── */
+  .post-nav {
+    position: fixed;
+    top: 2rem;
+    left: clamp(1rem, 4vw, 3rem);
+    z-index: 20;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    font-family: var(--f-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    text-decoration: none;
+    transition: color 0.25s;
+  }
+  .back-link:hover { color: var(--c-heading); }
+
+  .back-arrow {
+    font-size: 0.9em;
+    transition: transform 0.25s;
+  }
+  .back-link:hover .back-arrow { transform: translateX(-3px); }
+
+  /* ── Article shell ───────────────────────────────────────────────────────── */
+  .post-shell {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: clamp(5rem, 10vh, 8rem) var(--col-pad) clamp(4rem, 8vh, 6rem);
+  }
+
+  /* ── Glass reading column ────────────────────────────────────────────────── */
+  .post-glass {
+    width: 100%;
+    max-width: var(--col-width);
+
+    /* Glass: dark, subtle, not screaming */
+    background: var(--c-glass);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid var(--c-glass-edge);
+    border-radius: 4px;           /* minimal radius — architectural, not soft */
+    box-shadow:
+      0 2px 4px rgba(0,0,0,0.4),
+      0 16px 64px rgba(0,0,0,0.55),
+      0 48px 128px rgba(0,0,0,0.35);
+
+    padding: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 5vw, 4rem);
+    align-self: flex-start;
+  }
+
+  /* ── Post header ─────────────────────────────────────────────────────────── */
+  .post-header {
+    margin-bottom: 3rem;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .post-tag {
+    font-family: var(--f-body);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-accent);
+    opacity: 0.75;
+  }
+
+  /* Separate tags visually without boxes — cleaner */
+  .post-tag + .post-tag::before {
+    content: '/';
+    margin-right: 0.5rem;
+    opacity: 0.35;
+  }
+
+  .post-title {
+    font-family: var(--f-display);
+    font-size: clamp(2.2rem, 5.5vw, 3.8rem);
+    font-weight: 900;
+    font-style: italic;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    color: var(--c-heading);
+
+    /* NO text-shadow. Contrast is the only tool. */
+    text-shadow: none;
+    margin-bottom: 1.25rem;
+  }
+
+  .post-description {
+    font-family: var(--f-body);
+    font-size: clamp(1.1rem, 2vw, 1.3rem);
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--c-muted);
+    text-shadow: none;            /* explicit: never shadow body copy */
+    margin-bottom: 1.5rem;
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--f-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    opacity: 0.7;
+    margin-bottom: 2rem;
+  }
+  .meta-sep { opacity: 0.4; }
+
+  /* The rule: single pixel, nearly invisible — structure not decoration */
+  .post-rule {
+    width: 100%;
+    height: 1px;
+    background: var(--c-rule);
+  }
+
+  /* ── Prose body — typographic system ────────────────────────────────────── */
+  .post-body {
+    padding-top: 2.5rem;
+  }
+
+  /* ─ Headings ─ */
+  .post-body h2 {
+    font-family: var(--f-display);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    color: var(--c-heading);
+    text-shadow: none;            /* NONE. The law. */
+    margin-top: 3.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .post-body h3 {
+    font-family: var(--f-display);
+    font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+    font-weight: 700;
+    font-style: italic;
+    line-height: 1.25;
+    color: var(--c-heading);
+    text-shadow: none;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .post-body h4 {
+    font-family: var(--f-body);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    text-shadow: none;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ─ Paragraphs ─ */
+  .post-body p {
+    font-family: var(--f-body);
+    font-size: inherit;
+    line-height: 1.85;
+    color: var(--c-body);
+    text-shadow: none;            /* NONE. Everywhere. Always. */
+    margin-bottom: 1.5rem;
+    hanging-punctuation: first;
+  }
+
+  .post-body p:last-child { margin-bottom: 0; }
+
+  /* First paragraph after header: slightly larger — editorial lead-in */
+  .post-body > p:first-of-type {
+    font-size: clamp(1.1rem, 1.8vw, 1.22rem);
+    color: rgba(210, 203, 193, 0.90);
+  }
+
+  /* ─ Bionic bold spans ─ */
+  .post-body b.bionic {
+    font-weight: 700;
+    color: rgba(220, 214, 205, 0.95);
+    /* No shadow, just slightly brighter */
+  }
+
+  /* ─ Links — antique gold, no glow ─ */
+  .post-body a {
+    color: var(--c-accent);
+    text-decoration: underline;
+    text-decoration-color: rgba(185, 158, 110, 0.30);
+    text-underline-offset: 3px;
+    transition: color 0.2s, text-decoration-color 0.2s;
+  }
+  .post-body a:hover {
+    color: rgba(210, 183, 135, 0.95);
+    text-decoration-color: rgba(185, 158, 110, 0.65);
+    /* No text-shadow on hover — colour shift is enough */
+  }
+
+  /* ─ Blockquote — indented, italic, muted ─ */
+  .post-body blockquote {
+    margin: 2.5rem 0;
+    padding: 1.5rem 2rem;
+    border-left: 2px solid rgba(185, 158, 110, 0.25);
+    font-style: italic;
+    color: var(--c-muted);
+    font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+  }
+  .post-body blockquote p { margin-bottom: 0; }
+  .post-body blockquote cite {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-style: normal;
+    opacity: 0.55;
+  }
+
+  /* ─ Code — monospace, dark surface ─ */
+  .post-body code {
+    font-family: var(--f-mono);
+    font-size: 0.88em;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 3px;
+    padding: 0.15em 0.4em;
+    color: rgba(200, 193, 183, 0.90);
+  }
+
+  .post-body pre {
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    padding: 1.5rem 1.75rem;
+    overflow-x: auto;
+    margin: 2rem 0;
+  }
+  .post-body pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: rgba(190, 183, 173, 0.85);
+  }
+
+  /* ─ Lists ─ */
+  .post-body ul,
+  .post-body ol {
+    padding-left: 1.6rem;
+    margin-bottom: 1.5rem;
+    color: var(--c-body);
+  }
+  .post-body li { margin-bottom: 0.4rem; line-height: 1.8; }
+
+  .post-body ul li::marker {
+    color: var(--c-accent);
+    opacity: 0.5;
+  }
+  .post-body ol li::marker {
+    font-family: var(--f-body);
+    color: var(--c-muted);
+    font-size: 0.85em;
+  }
+
+  /* ─ Horizontal rule ─ */
+  .post-body hr {
+    border: none;
+    height: 1px;
+    background: var(--c-rule);
+    margin: 3rem auto;
+    width: 60%;
+  }
+
+  /* ─ Images ─ */
+  .post-body img {
+    width: 100%;
+    height: auto;
+    border-radius: 3px;
+    display: block;
+    margin: 2.5rem auto;
+    opacity: 0.92;
+  }
+  .post-body figure { margin: 2.5rem 0; }
+  .post-body figcaption {
+    text-align: center;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    margin-top: 0.75rem;
+    opacity: 0.65;
+  }
+
+  /* ─ Tables ─ */
+  .post-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: 0.92rem;
+  }
+  .post-body th {
+    font-family: var(--f-body);
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .post-body td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--c-body);
+  }
+
+  /* ── Post footer ─────────────────────────────────────────────────────────── */
+  .post-footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--c-rule);
+  }
+
+  .footer-back {
+    font-family: var(--f-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    text-decoration: none;
+    transition: color 0.25s;
+  }
+  .footer-back:hover { color: var(--c-heading); }
+
+  /* ── Scrollbar ────────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--c-void); }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(185, 158, 110, 0.18);
+    border-radius: 2px;
+  }
+
+  /* ── Selection ────────────────────────────────────────────────────────────── */
+  ::selection {
+    background: rgba(185, 158, 110, 0.20);
+    color: rgba(230, 224, 215, 0.98);
+  }
+
+  /* ── Responsive ───────────────────────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .post-nav { top: 1rem; left: 1rem; }
+    .post-shell { padding-top: 4.5rem; }
+    .post-glass { border-radius: 0; border-left: none; border-right: none; }
+  }
+</style>
+
+<!-- Bionic Reading: paragraph text only, never headings -->
+<script>
+  function bionicNode(node: Text) {
+    const words = node.textContent?.split(/(\s+)/) ?? [];
+    if (words.length < 2) return;
+    const frag = document.createDocumentFragment();
+    for (const word of words) {
+      if (/^\s+$/.test(word)) {
+        frag.appendChild(document.createTextNode(word));
+      } else {
+        const cut = Math.max(1, Math.ceil(word.length * 0.52));
+        const b   = document.createElement('b');
+        b.className = 'bionic';
+        b.textContent = word.slice(0, cut);
+        frag.appendChild(b);
+        frag.appendChild(document.createTextNode(word.slice(cut)));
+      }
+    }
+    node.replaceWith(frag);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Scope: only paragraphs inside .post-body
+    const body = document.querySelector('.post-body');
+    if (!body) return;
+
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const p = node.parentElement?.tagName.toLowerCase();
+        return (p === 'p' || p === 'li')
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_SKIP;
+      }
+    });
+    const nodes: Text[] = [];
+    let n: Node | null;
+    while ((n = walker.nextNode())) nodes.push(n as Text);
+    nodes.forEach(bionicNode);
+  });
+</script>

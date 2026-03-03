@@ -1,414 +1,188 @@
 ---
 // src/layouts/BaseLayout.astro
 // Index / listing layout.
-// All heading text-shadows: removed.
-// Only structural contrast, no cheap glow tricks.
+// Changes: BaseHead integrated (was missing all SEO). Duplicate font links removed.
 
 import QuantumCanvas from '../components/QuantumCanvas.astro';
+import BaseHead from '../components/BaseHead.astro';
 
 export interface Props {
-  title:        string;
-  description?: string;
-  fullBleed?:   boolean;
+    title:        string;
+    description?: string;
+    fullBleed?:   boolean;
+    language?:    string;
 }
 
-const { title, description = '', fullBleed = false } = Astro.props;
+const { title, description = '', fullBleed = false, language = 'en' } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang={language}>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content={description} />
-  <title>{title}</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
-    rel="stylesheet"
-  />
+    <BaseHead title={title} description={description} language={language} />
 </head>
 
 <body>
-  <!-- WebGL lacquer floor — fixed behind everything -->
-  <QuantumCanvas />
+    <QuantumCanvas />
 
-  <!-- Stealth Morphic Nav ─────────────────────────────────────────────────
-       Desktop: GN logo at opacity 0.2, reveals on mouse proximity to top.
-       Mobile:  fixed bottom bar — razor-thin gold hairline, icons only.
-  ──────────────────────────────────────────────────────────────────────── -->
-  <nav id="gn-nav" class="gn-nav" aria-label="Site navigation">
-    <a href="/" class="gn-logo" aria-label="Global Nexus home">GN</a>
-    <div class="gn-actions">
-      <button class="gn-icon-btn" aria-label="Search">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="7.5"/><line x1="17" y1="17" x2="22.5" y2="22.5"/>
-        </svg>
-      </button>
-      <button class="gn-icon-btn" aria-label="Menu">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-    </div>
-  </nav>
+    <nav id="gn-nav" class="gn-nav" aria-label="Site navigation">
+        <a href="/" class="gn-logo" aria-label="Global Nexus home">GN</a>
+        <div class="gn-actions">
+            <button class="gn-icon-btn open-search-btn" aria-label="Search">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7.5"/><line x1="17" y1="17" x2="22.5" y2="22.5"/>
+                </svg>
+            </button>
+            <button class="gn-icon-btn" aria-label="Menu">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
 
-  <!-- Dark ambient scrim — deepens abyss, never white -->
-  <div class="ambient-scrim" aria-hidden="true"></div>
+    <div class="ambient-scrim" aria-hidden="true"></div>
 
-  <!-- Content -->
-  <main class:list={['site-main', { 'site-main--full': fullBleed }]}>
-    <slot />
-  </main>
+    <main class:list={['site-main', { 'site-main--full': fullBleed }]}>
+        <slot />
+    </main>
 
-  <!-- Grain -->
-  <div class="grain-overlay" aria-hidden="true"></div>
+    <div class="grain-overlay" aria-hidden="true"></div>
 </body>
 </html>
 
 <style is:global>
-  /* ── Tokens ──────────────────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --c-void:        #030303;
-    --c-abyss:       #060409;
-    --c-glass-bg:    rgba(5, 4, 9, 0.68);
-    --c-glass-hover: rgba(7, 5, 12, 0.76);
-    --c-glass-card:  rgba(5, 4, 9, 0.58);
-    --c-glass-edge:  rgba(255, 255, 255, 0.055);
+    :root {
+        --c-void:        #030303;
+        --c-abyss:       #060409;
+        --c-glass-bg:    rgba(5, 4, 9, 0.68);
+        --c-glass-hover: rgba(7, 5, 12, 0.76);
+        --c-glass-card:  rgba(5, 4, 9, 0.58);
+        --c-glass-edge:  rgba(255, 255, 255, 0.055);
+        --c-heading:     rgba(230, 224, 215, 0.96);
+        --c-body:        rgba(195, 188, 178, 0.82);
+        --c-muted:       rgba(140, 134, 126, 0.60);
+        --c-accent:      rgba(185, 158, 110, 0.80);
+        --glass-blur:    blur(16px) saturate(140%);
+        --f-display:     'Playfair Display', Georgia, serif;
+        --f-body:        'EB Garamond', Georgia, serif;
+        --space-xs: 0.5rem; --space-s: 1rem; --space-m: 2rem;
+        --space-l: 4rem;    --space-xl: 8rem;
+    }
 
-    /* Type colours — warm, dark, contrast-only */
-    --c-heading:     rgba(230, 224, 215, 0.96);
-    --c-body:        rgba(195, 188, 178, 0.82);
-    --c-muted:       rgba(140, 134, 126, 0.60);
-    --c-accent:      rgba(185, 158, 110, 0.80);   /* antique gold */
+    html { background: var(--c-void); color-scheme: dark; scroll-behavior: smooth; }
+    body {
+        background: transparent; font-family: var(--f-body);
+        font-size: clamp(1.05rem, 1.5vw, 1.2rem); line-height: 1.78;
+        color: var(--c-body); min-height: 100vh; overflow-x: hidden;
+    }
 
-    /* Glass */
-    --glass-blur:    blur(16px) saturate(140%);
+    .ambient-scrim {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background:
+            radial-gradient(ellipse 100% 60% at 50% 100%, rgba(3,2,5,0.75) 0%, transparent 70%),
+            linear-gradient(180deg, rgba(3,2,5,0.25) 0%, rgba(3,2,5,0.50) 100%);
+    }
 
-    /* Type */
-    --f-display:    'Playfair Display', Georgia, serif;
-    --f-body:       'EB Garamond', Georgia, serif;
+    .grain-overlay {
+        position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+        opacity: 0.025;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-size: 256px;
+    }
 
-    /* Rhythm */
-    --space-xs: 0.5rem;
-    --space-s:  1rem;
-    --space-m:  2rem;
-    --space-l:  4rem;
-    --space-xl: 8rem;
-  }
+    .site-main {
+        position: relative; z-index: 1; max-width: 1200px;
+        margin: 0 auto; padding: var(--space-l) var(--space-m);
+    }
+    .site-main--full { max-width: none; padding: 0; }
 
-  html {
-    background: var(--c-void);
-    color-scheme: dark;
-    scroll-behavior: smooth;
-  }
-
-  body {
-    background: transparent;
-    font-family: var(--f-body);
-    font-size: clamp(1.05rem, 1.5vw, 1.2rem);
-    line-height: 1.78;
-    color: var(--c-body);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── Ambient scrim ────────────────────────────────────────────────────────── */
-  .ambient-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(ellipse 100% 60% at 50% 100%, rgba(3,2,5,0.75) 0%, transparent 70%),
-      linear-gradient(180deg, rgba(3,2,5,0.25) 0%, rgba(3,2,5,0.50) 100%);
-  }
-
-  /* ── Grain ────────────────────────────────────────────────────────────────── */
-  .grain-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    pointer-events: none;
-    opacity: 0.025;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 256px;
-  }
-
-  /* ── Main container ───────────────────────────────────────────────────────── */
-  .site-main {
-    position: relative;
-    z-index: 1;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: var(--space-l) var(--space-m);
-  }
-
-  /* Full-bleed variant — used by index page for hero/gallery layout */
-  .site-main--full {
-    max-width: none;
-    padding: 0;
-  }
-
-  /* ── Stealth Morphic Nav ──────────────────────────────────────────────────── */
-  .gn-nav {
-    --nav-reveal: 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.4rem 2.5rem;
-    pointer-events: none;     /* ghost layer — only children are interactive */
-  }
-
-  .gn-logo {
-    font-family: var(--f-display);
-    font-size: 0.80rem;
-    font-weight: 900;
-    letter-spacing: 0.40em;
-    text-transform: uppercase;
-    color: var(--c-heading);
-    text-decoration: none;
-    opacity: calc(0.20 + var(--nav-reveal) * 0.72);
-    transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: auto;
-  }
-
-  .gn-actions {
-    display: flex;
-    gap: 1.25rem;
-    align-items: center;
-    opacity: calc(0.20 + var(--nav-reveal) * 0.72);
-    transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: auto;
-  }
-
-  .gn-icon-btn {
-    background: none;
-    border: none;
-    padding: 0.35rem;
-    cursor: pointer;
-    color: var(--c-heading);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.25s;
-  }
-  .gn-icon-btn:hover { color: var(--c-accent); }
-
-  /* Mobile: flip to bottom bar with gold hairline */
-  @media (max-width: 767px) {
     .gn-nav {
-      top: auto;
-      bottom: 0;
-      padding: 0.65rem 2rem;
-      background: rgba(3, 2, 5, 0.92);
-      backdrop-filter: blur(20px) saturate(130%);
-      -webkit-backdrop-filter: blur(20px) saturate(130%);
-      border-top: 1px solid rgba(185, 158, 110, 0.52);
-      pointer-events: auto;
-      --nav-reveal: 1;   /* always fully visible on mobile */
+        --nav-reveal: 0;
+        position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.4rem 2.5rem; pointer-events: none;
     }
-
-    .gn-logo { display: none; }
-
+    .gn-logo {
+        font-family: var(--f-display); font-size: 0.80rem; font-weight: 900;
+        letter-spacing: 0.40em; text-transform: uppercase;
+        color: var(--c-heading); text-decoration: none;
+        opacity: calc(0.20 + var(--nav-reveal) * 0.72);
+        transition: opacity 0.9s cubic-bezier(0.4,0,0.2,1);
+        pointer-events: auto;
+    }
     .gn-actions {
-      width: 100%;
-      justify-content: center;
-      gap: 3.5rem;
-      opacity: 1;
+        display: flex; gap: 1.25rem; align-items: center;
+        opacity: calc(0.20 + var(--nav-reveal) * 0.72);
+        transition: opacity 0.9s cubic-bezier(0.4,0,0.2,1);
+        pointer-events: auto;
+    }
+    .gn-icon-btn {
+        background: none; border: none; padding: 0.35rem; cursor: pointer;
+        color: var(--c-heading); display: flex; align-items: center;
+        justify-content: center; transition: color 0.25s;
+    }
+    .gn-icon-btn:hover { color: var(--c-accent); }
+
+    h1, h2, h3, h4 {
+        font-family: var(--f-display); font-weight: 700; line-height: 1.1;
+        letter-spacing: -0.02em; color: var(--c-heading); text-shadow: none;
+    }
+    h1 { font-size: clamp(3rem,8vw,7rem); font-weight: 900; font-style: italic; letter-spacing: 0.06em; }
+    h2 { font-size: clamp(1.8rem,4.5vw,3.2rem); }
+    h3 { font-size: clamp(1.25rem,2.5vw,2rem); font-style: italic; }
+    h4 { font-family: var(--f-body); font-size: 0.72rem; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--c-muted); }
+    p { font-family: var(--f-body); text-shadow: none; }
+    a { color: var(--c-accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: rgba(215,188,140,0.95); }
+
+    .glass-panel {
+        background: var(--c-glass-bg); backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--c-glass-edge); border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.4), 0 16px 48px rgba(0,0,0,0.55);
+        transition: background 0.35s, box-shadow 0.35s, border-color 0.35s;
+    }
+    .glass-panel:hover {
+        background: var(--c-glass-hover); border-color: rgba(185,158,110,0.12);
     }
 
-    .gn-icon-btn { padding: 0.5rem; }
-  }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: var(--c-abyss); }
+    ::-webkit-scrollbar-thumb { background: rgba(185,158,110,0.18); border-radius: 2px; }
+    ::selection { background: rgba(185,158,110,0.20); color: rgba(230,224,215,0.98); }
 
-  /* ── Glass panel base ─────────────────────────────────────────────────────── */
-  .glass-panel {
-    background:       var(--c-glass-bg);
-    backdrop-filter:  var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border:           1px solid var(--c-glass-edge);
-    border-radius:    4px;
-    box-shadow:
-      0 2px 4px rgba(0,0,0,0.4),
-      0 16px 48px rgba(0,0,0,0.55);
-    transition:
-      background 0.35s ease,
-      box-shadow  0.35s ease,
-      border-color 0.35s ease;
-  }
-
-  .glass-panel:hover {
-    background:   var(--c-glass-hover);
-    border-color: rgba(185, 158, 110, 0.12);
-    box-shadow:
-      0 2px 4px rgba(0,0,0,0.4),
-      0 24px 64px rgba(0,0,0,0.65),
-      0 0 80px rgba(185,158,110,0.04);
-  }
-
-  /* ── Headings — contrast only, zero text-shadow ──────────────────────────── */
-  h1, h2, h3, h4 {
-    font-family:    var(--f-display);
-    font-weight:    700;
-    line-height:    1.1;
-    letter-spacing: -0.02em;
-    color:          var(--c-heading);
-    text-shadow:    none;          /* THE LAW. No shadow. Ever. */
-  }
-
-  h1 {
-    font-size:      clamp(3rem, 8vw, 7rem);
-    font-weight:    900;
-    font-style:     italic;
-    letter-spacing: 0.06em;   /* wide, expensive — Urushi/Saint Laurent character */
-    text-shadow:    none;
-  }
-
-  h2 { font-size: clamp(1.8rem, 4.5vw, 3.2rem); }
-  h3 { font-size: clamp(1.25rem, 2.5vw, 2rem); font-style: italic; }
-  h4 {
-    font-family:    var(--f-body);
-    font-size:      0.72rem;
-    font-weight:    400;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color:          var(--c-muted);
-    text-shadow:    none;
-  }
-
-  p {
-    font-family: var(--f-body);
-    text-shadow: none;   /* explicit — never inherit a shadow */
-  }
-
-  /* Bionic bold */
-  b.bionic {
-    font-weight: 700;
-    color: rgba(215, 208, 198, 0.95);
-  }
-
-  /* ── Links ────────────────────────────────────────────────────────────────── */
-  a {
-    color: var(--c-accent);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  a:hover {
-    color: rgba(215, 188, 140, 0.95);
-    /* No text-shadow on hover. Colour shift is sufficient. */
-  }
-
-  /* ── Site header ──────────────────────────────────────────────────────────── */
-  .site-header {
-    padding: var(--space-l) 0 var(--space-m);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    margin-bottom: var(--space-l);
-  }
-
-  .site-header .eyebrow {
-    display: block;
-    font-size:      0.68rem;
-    letter-spacing: 0.30em;
-    text-transform: uppercase;
-    color:          var(--c-muted);
-    margin-bottom:  var(--space-xs);
-  }
-
-  /* ── Article grid ─────────────────────────────────────────────────────────── */
-  .article-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
-    gap: var(--space-m);
-    margin-top: var(--space-l);
-  }
-
-  /* ── Thin rule — structure only, no gradient rainbow ─────────────────────── */
-  .site-rule {
-    border: none;
-    height: 1px;
-    background: rgba(255,255,255,0.06);
-    margin: var(--space-l) 0;
-  }
-
-  /* ── Scrollbar ────────────────────────────────────────────────────────────── */
-  ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-track { background: var(--c-abyss); }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(185,158,110,0.18);
-    border-radius: 2px;
-  }
-
-  /* ── Selection ────────────────────────────────────────────────────────────── */
-  ::selection {
-    background: rgba(185,158,110,0.20);
-    color: rgba(230,224,215,0.98);
-  }
+    @media (max-width: 767px) {
+        .gn-nav {
+            top: auto; bottom: 0; padding: 0.65rem 2rem;
+            background: rgba(3,2,5,0.92);
+            backdrop-filter: blur(20px) saturate(130%);
+            -webkit-backdrop-filter: blur(20px) saturate(130%);
+            border-top: 1px solid rgba(185,158,110,0.52);
+            pointer-events: auto; --nav-reveal: 1;
+        }
+        .gn-logo { display: none; }
+        .gn-actions { width: 100%; justify-content: center; gap: 3.5rem; opacity: 1; }
+        .gn-icon-btn { padding: 0.5rem; }
+    }
 </style>
 
-<!-- Bionic Reading — paragraph text only, never headings -->
 <script>
-  function bionicNode(node: Text) {
-    const words = node.textContent?.split(/(\s+)/) ?? [];
-    if (words.length < 2) return;
-    const frag = document.createDocumentFragment();
-    for (const word of words) {
-      if (/^\s+$/.test(word)) {
-        frag.appendChild(document.createTextNode(word));
-      } else {
-        const cut = Math.max(1, Math.ceil(word.length * 0.52));
-        const b   = document.createElement('b');
-        b.className = 'bionic';
-        b.textContent = word.slice(0, cut);
-        frag.appendChild(b);
-        frag.appendChild(document.createTextNode(word.slice(cut)));
-      }
-    }
-    node.replaceWith(frag);
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        const p = node.parentElement?.tagName.toLowerCase();
-        return (p === 'p' || p === 'li')
-          ? NodeFilter.FILTER_ACCEPT
-          : NodeFilter.FILTER_SKIP;
-      }
-    });
-    const nodes: Text[] = [];
-    let n: Node | null;
-    while ((n = walker.nextNode())) nodes.push(n as Text);
-    nodes.forEach(bionicNode);
-  });
-</script>
-
-<!-- Stealth nav: reveal GN logo on mouse proximity to top edge (desktop only) -->
-<script>
-  (function () {
-    const nav = document.getElementById('gn-nav');
-    if (!nav) return;
-
-    const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
-
-    document.addEventListener('mousemove', (e: MouseEvent) => {
-      if (isMobile()) return;
-      const proximity = Math.max(0, 1 - e.clientY / 160);
-      nav.style.setProperty('--nav-reveal', proximity.toFixed(3));
-    });
-
-    document.addEventListener('mouseleave', () => {
-      if (!isMobile()) nav.style.setProperty('--nav-reveal', '0');
-    });
-  })();
+    (function () {
+        const nav = document.getElementById('gn-nav');
+        if (!nav) return;
+        const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
+        document.addEventListener('mousemove', (e: MouseEvent) => {
+            if (isMobile()) return;
+            const proximity = Math.max(0, 1 - e.clientY / 160);
+            nav.style.setProperty('--nav-reveal', proximity.toFixed(3));
+        });
+        document.addEventListener('mouseleave', () => {
+            if (!isMobile()) nav.style.setProperty('--nav-reveal', '0');
+        });
+    })();
 </script>

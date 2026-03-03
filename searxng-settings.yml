@@ -1,0 +1,8 @@
+﻿use_default_settings: true
+server:
+  limiter: false
+  secret_key: "globalnexus_secret_2026"
+search:
+  formats:
+    - html
+    - json

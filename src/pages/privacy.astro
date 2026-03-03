@@ -1,34 +1,73 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import BlogPost from '../layouts/BlogPost.astro';
 ---
 
-<BaseLayout title="Privacy Policy & Disclaimer" description="Legal information for Global Nexus Blog">
-    <Header />
-    <main class="w-full max-w-4xl mx-auto px-6 py-24 bg-[#FDFDFD]">
-        <h1 class="text-3xl font-serif font-bold mb-12 border-b pb-4">Legal Information</h1>
-        
-        <section class="mb-12">
-            <h2 class="text-2xl font-semibold mb-4">Affiliate Disclaimer</h2>
-            <p class="text-gray-700 leading-relaxed">
-                Global Nexus Blog participates in various affiliate marketing programs, which means we may get paid commissions on editorially chosen products purchased through our links to retailer sites. 
-                Our editorial content is not influenced by advertisers or affiliate partnerships. This disclosure is provided in accordance with the Federal Trade Commission's 16 CFR § 255.5.
-            </p>
-        </section>
+<BlogPost
+    title="Legal Information"
+    description="Privacy policy, affiliate disclosure, and terms of use for Global Nexus."
+    readTime="4 min read"
+>
 
-        <section class="mb-12">
-            <h2 class="text-2xl font-semibold mb-4">Privacy Policy</h2>
-            <p class="text-gray-700 leading-relaxed mb-4">
-                Your privacy is important to us. It is Global Nexus Blog's policy to respect your privacy regarding any information we may collect from you across our website.
-            </p>
-            <ul class="list-disc pl-6 text-gray-700 space-y-2">
-                <li>We only ask for personal information when we truly need it to provide a service to you.</li>
-                <li>We collect it by fair and lawful means, with your knowledge and consent.</li>
-                <li>We don't share any personally identifying information publicly or with third-parties, except when required to by law.</li>
-                <li>Our website may link to external sites that are not operated by us. Please be aware that we have no control over the content and practices of these sites.</li>
-            </ul>
-        </section>
-    </main>
-    <Footer />
-</BaseLayout>
+<h2>Affiliate Disclaimer</h2>
+
+<p>
+Global Nexus participates in affiliate marketing programs. We may earn commissions on products purchased through links on this site. This disclosure is provided in accordance with the FTC's 16 CFR § 255.5 (United States) and equivalent regulations in other jurisdictions.
+</p>
+
+<p>
+Affiliate relationships do not influence editorial content. Topic selection and article structure are determined algorithmically based on audience relevance and search intent — not on advertiser direction or commissions.
+</p>
+
+<p>
+**Products currently linked on this site include:** Bitget (cryptocurrency exchange), NordVPN, and Amazon-affiliated products. These are selected by an automated system based on contextual relevance to each article.
+</p>
+
+<h2>Privacy Policy</h2>
+
+<p>
+We collect minimal data necessary to operate this site. Specifically:
+</p>
+
+<p>
+**Analytics:** This site uses standard web analytics to measure traffic, page performance, and article engagement. This data is aggregated and anonymized. No personally identifiable information is collected or stored.
+</p>
+
+<p>
+**Cookies:** Third-party services (including affiliate networks and analytics providers) may set cookies on your device. You can manage cookie preferences through your browser settings.
+</p>
+
+<p>
+**Third-party links:** This site links to external services we do not control. Their privacy practices are governed by their own policies. We recommend reviewing the privacy policy of any external site before providing personal information.
+</p>
+
+<p>
+**Data sharing:** We do not sell, trade, or transfer personally identifiable information to third parties. Aggregated, anonymized behavioral data may be used to optimize content and ad placement.
+</p>
+
+<h2>AI-Generated Content</h2>
+
+<p>
+Articles on this site are generated using AI language models. While the system is designed to produce accurate, well-structured information, readers should verify factual claims — particularly for financial, medical, or legal decisions — through authoritative primary sources.
+</p>
+
+<p>
+Content reflects information available at the time of generation. It may not reflect recent developments.
+</p>
+
+<h2>Jurisdiction</h2>
+
+<p>
+This site is operated internationally. Compliance efforts cover GDPR (European Union), CCPA (California), and APPI (Japan). If you have a data-related request under any of these frameworks, contact information is available in the site footer.
+</p>
+
+<h2>Changes to This Policy</h2>
+
+<p>
+This page may be updated as the platform evolves. Continued use of the site after changes constitutes acceptance of the revised policy.
+</p>
+
+<p>
+Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+</p>
+
+</BlogPost>
