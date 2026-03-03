@@ -1,18 +1,17 @@
 ﻿# ai_core/writer_agent.py
 #
-# Writer Agent — Perspective Architecture
+# Writer Agent — v3 (3 critical fixes applied)
 #
-# The core problem with AI content farms: they generate the same article
-# everyone else generates. The fix is forcing the model to commit to a
-# SPECIFIC THESIS before writing.
+# Fix 1: editorial_strategy field removed.
+#         Chain-of-Thought moved to system prompt.
+#         Models reason better when told HOW to think, not asked to output thinking.
 #
-# Perspective Architecture:
-#   1. Director provides contrarian_angle and unique_thesis
-#   2. Writer OPENS with the thesis (not background, not definitions)
-#   3. Writer DEFENDS the thesis — not "on one hand / on the other"
-#   4. Comparison table: conventional view vs. thesis view
-#   5. FAQ answers the strongest objections to the thesis
-#   6. Real research data (from ResearcherAgent) grounds every claim
+# Fix 2: ResearcherAgent now runs ONCE per article, cached in state.research_brief.
+#         Retries reuse the same data. No redundant HTTP calls.
+#
+# Fix 3: XML tags replaced with numbered plain-text rules.
+#         llama3.1 with format:json treats XML as string data to escape,
+#         not as structural instructions. Plain numbered lists get followed.
 
 import requests
 import json
@@ -21,16 +20,14 @@ from .config import OLLAMA_HOST, OLLAMA_MODEL
 from .researcher_agent import ResearcherAgent, ResearchBrief
 
 LANGUAGE_INSTRUCTIONS = {
-    "ja": "日本語で執筆すること。翻訳ではなく、日本語ネイティブとして最初から日本語で思考・執筆すること。",
-    "es": "Escribe en español nativo. No traduzcas desde el inglés — piensa y redacta directamente en español.",
-    "en": "Write in English. Use a confident, direct editorial voice. No hedging.",
-    "zh": "用中文写作。不要翻译，直接用中文思考和写作。",
-    "ko": "한국어로 작성하세요. 번역이 아닌, 처음부터 한국어로 사고하고 작성하세요.",
-    "fr": "Écris en français natif. Ne traduis pas depuis l'anglais — rédige directement en français.",
-    "de": "Schreibe auf Deutsch. Nicht übersetzen — direkt auf Deutsch denken und schreiben.",
-    "pt": "Escreve em português nativo. Não traduzas do inglês — pensa e rediges diretamente em português.",
-    "ar": "اكتب باللغة العربية. لا تترجم من الإنجليزية — فكر واكتب مباشرة بالعربية.",
-    "hi": "हिंदी में लिखें। अंग्रेज़ी से अनुवाद न करें — सीधे हिंदी में सोचें और लिखें।",
+    "ja": "Write entirely in Japanese. Think natively in Japanese from the first word. Do not translate.",
+    "es": "Write entirely in Spanish. Think natively in Spanish. Do not translate from English.",
+    "en": "Write in English. Direct, confident, no hedging.",
+    "zh": "Write entirely in Chinese. Think natively in Chinese. Do not translate.",
+    "ko": "Write entirely in Korean. Think natively in Korean. Do not translate.",
+    "fr": "Write entirely in French. Think natively in French. Do not translate.",
+    "de": "Write entirely in German. Think natively in German. Do not translate.",
+    "pt": "Write entirely in Portuguese. Think natively in Portuguese. Do not translate.",
 }
 
 MAX_FEEDBACK_CHARS = 300
@@ -43,109 +40,93 @@ class WriterAgent:
         self.researcher = ResearcherAgent()
 
     def generate_article(self, state: ArticleState) -> ArticleState:
-        """
-        Generates a blog article with a specific thesis and real research data.
-        """
 
-        # 1. Fetch real research data (never blocks — degrades gracefully)
-        brief: ResearchBrief = self.researcher.research(state.topic, state.language)
+        # ── Fix 2: Research runs ONCE, cached on state ────────────────────────
+        # On retry, state.research_brief already exists — skip the HTTP calls.
+        if not getattr(state, 'research_brief', None):
+            state.research_brief = self.researcher.research(
+                state.topic, state.language
+            )
+        brief: ResearchBrief = state.research_brief
 
-        # 2. Extract perspective from strategy (set by Orchestrator from Director output)
+        # ── Context assembly ──────────────────────────────────────────────────
         contrarian_angle = getattr(state, 'contrarian_angle', '')
         unique_thesis    = getattr(state, 'unique_thesis', '')
-        target_audience  = getattr(state, 'target_audience', 'a curious, skeptical reader')
-
-        # 3. Language instruction
+        target_audience  = getattr(state, 'target_audience', 'a skeptical, intelligent reader')
         lang_instruction = LANGUAGE_INSTRUCTIONS.get(
             state.language,
-            f"Write in {state.language}. Think and write natively — do not translate."
+            f"Write entirely in {state.language}. Do not translate."
         )
 
-        # 4. Feedback injection (retry path)
-        feedback_instruction = ""
+        # Retry feedback
+        feedback_block = ""
         if state.retry_count > 0 and state.critic_feedback:
-            feedback_instruction = f"""
-[AUDITOR FEEDBACK — MUST FIX]
-Previous attempt rejected. Reason: {state.critic_feedback[:MAX_FEEDBACK_CHARS]}
-Fix this specifically in your rewrite.
-"""
+            feedback_block = (
+                f"\nPREVIOUS ATTEMPT REJECTED. FIX THIS BEFORE WRITING:\n"
+                f"{state.critic_feedback[:MAX_FEEDBACK_CHARS]}\n"
+            )
 
-        # 5. Perspective block (Positive Constraintsに変換)
-        if contrarian_angle and unique_thesis:
-            perspective_block = f"""
-<editorial_mandate>
-Contrarian Angle: {contrarian_angle}
-Unique Thesis: {unique_thesis}
-Target Reader: {target_audience}
-
-Drive the narrative using this specific thesis. 
-Open immediately with a sharp claim establishing the thesis.
-Structure every H2 section as a supporting argument for the thesis.
-Include a Comparison Table contrasting 'Conventional Wisdom' with the 'Thesis Position'.
-Address and dismantle the 3 strongest skeptical objections in the FAQ section.
-Maintain a highly opinionated, decisive tone throughout.
-</editorial_mandate>
-"""
-        else:
-            perspective_block = """
-<editorial_mandate>
-Select one non-obvious, highly opinionated angle and defend it decisively throughout the entire article. Open with a sharp claim.
-</editorial_mandate>
-"""
-
-        # 6. Research context
+        # Research block — plain text, no XML
         research_block = ""
-        if brief.key_facts or brief.abstract:
-            research_block = f"<research_context>\n{brief.to_prompt_context()}\n</research_context>"
+        if brief.has_data():
+            research_block = (
+                "VERIFIED RESEARCH DATA — cite at least 2 of these facts in the article:\n"
+                + brief.to_prompt_context()
+            )
 
-        # 7. Assemble prompt (XML & Context First)
-        prompt = f"""
-<role>
-You are an elite, authoritative journalist writing for highly intelligent, skeptical readers. 
-They demand information density and sharp insights. Make your article the definitive final word on the subject.
-</role>
+        # Thesis block
+        if contrarian_angle and unique_thesis:
+            thesis_block = (
+                f"THESIS TO DEFEND: {unique_thesis}\n"
+                f"CONTRARIAN ANGLE: {contrarian_angle}\n"
+                f"TARGET READER: {target_audience}"
+            )
+        else:
+            thesis_block = (
+                "Choose ONE non-obvious, opinionated angle and defend it decisively. "
+                "Do not write a balanced 'pros and cons' piece."
+            )
 
-<target_language>
-{lang_instruction}
-ALL internal processing and final outputs MUST be in {state.language}.
-</target_language>
+        # ── Fix 3: Plain numbered rules — no XML tags ─────────────────────────
+        # llama3.1 with format:json parses XML as escape-needed string data.
+        # Numbered plain-text rules are processed correctly.
+        prompt = f"""ROLE: Elite journalist. Opinionated. Evidence-based. No hedging.
+LANGUAGE: {lang_instruction}
+
+{thesis_block}
 
 {research_block}
 
-{perspective_block}
+{feedback_block}
 
-{feedback_instruction}
+WRITING RULES — follow every rule exactly:
+1. First sentence states the thesis as a direct, confident fact. Zero setup or background.
+2. Each H2 heading is a sub-argument defending the thesis, not a label or category.
+3. Comparison table required. Left column: ❌ popular myth or conventional wisdom. Right column: ✅ evidence-backed thesis position. Minimum 4 rows.
+4. Pros and Cons section required. Cons must be genuine — not softened or vague.
+5. FAQ section required. Each answer MUST include one specific company name, study, or number. Answers that repeat the question without new evidence are rejected.
+6. Final sentence: one declarative claim. No "In conclusion", no "To summarize".
+7. Bold the single most important idea in each section.
+8. Paragraphs: maximum 3 sentences each.
 
-<instructions>
-1. TITLE: Embed the contrarian angle directly. Make it punchy and expensive-sounding.
-2. OPENING (first 100 words): Start with a specific, surprising fact or claim. Hook the reader instantly.
-3. BODY: Use short, impactful paragraphs. Emphasize the core idea in bold.
-4. COMPARISON TABLE: Use ❌ for popular belief and ✅ for the evidence-backed thesis.
-5. PROS & CONS: Provide genuine, hard-hitting analysis.
-6. FAQ: Provide direct, unflinching responses to skeptical objections.
-7. CLOSING: End with a single, sharp, declarative sentence that leaves a lasting impact.
-</instructions>
+OUTPUT FORMAT: JSON only. No markdown fences. No preamble. No extra keys.
+{{"title": "Thesis-driven title in {state.language}", "description": "Max 120 chars, states the thesis, in {state.language}", "content_markdown": "Full article in Markdown, in {state.language}", "tags": ["tag1", "tag2", "tag3"]}}"""
 
-<output_format>
-You must respond strictly in JSON.
-CRITICAL: To ensure maximum logical rigor, you MUST output your internal thought process FIRST under the "editorial_strategy" key. Plan how you will weave the research into your thesis before writing the content.
-
-{{
-    "editorial_strategy": "Your step-by-step logical plan and argument structure in {state.language}",
-    "title": "Thesis-driven title in {state.language}",
-    "description": "Max 120 chars stating the thesis, in {state.language}",
-    "content_markdown": "Full article in Markdown, in {state.language}",
-    "tags": ["tag1", "tag2", "tag3"]
-}}
-</output_format>
-"""
-
+        # ── Fix 1: Chain-of-Thought in system prompt, not as output field ─────
+        # Asking the model to OUTPUT its strategy wastes tokens on throwaway text.
+        # Telling it HOW to reason in the system prompt costs nothing extra.
         payload = {
             "model": self.model,
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an elite autonomous journalist. You follow XML instructions perfectly and output only valid JSON."
+                    "content": (
+                        "You are an elite journalist with a strong editorial voice. "
+                        "Before writing each section, silently ask: "
+                        "'Does this sentence advance the thesis or just fill space?' "
+                        "Cut anything that fills space. "
+                        "Output only valid JSON. No preamble, no fences, no extra keys."
+                    )
                 },
                 {"role": "user", "content": prompt}
             ],
@@ -154,16 +135,21 @@ CRITICAL: To ensure maximum logical rigor, you MUST output your internal thought
         }
 
         try:
-            print(f"   ...Writer: {self.model} へ送信 "
-                  f"[lang={state.language}, facts={len(brief.key_facts)}]...")
+            print(f"   ...Writer: {self.model} "
+                  f"[lang={state.language}, "
+                  f"facts={len(brief.key_facts)}, "
+                  f"retry={state.retry_count}]...")
 
             response = requests.post(
-                f"{self.host}/api/chat", json=payload, timeout=120
+                f"{self.host}/api/chat",
+                json=payload,
+                timeout=120
             )
             response.raise_for_status()
 
             content_text = response.json().get("message", {}).get("content", "").strip()
 
+            # Strip markdown fences if model ignores format:json instruction
             for fence in ("```json", "```"):
                 if content_text.startswith(fence):
                     content_text = content_text[len(fence):]
@@ -181,8 +167,11 @@ CRITICAL: To ensure maximum logical rigor, you MUST output your internal thought
             return state
 
         except json.JSONDecodeError:
-            print(f"   [Writer Error] 不正なJSON: {content_text[:120]}...")
+            print(f"   [Writer Error] Invalid JSON: {content_text[:120]}...")
+            return state
+        except requests.exceptions.Timeout:
+            print(f"   [Writer Error] Timeout after 120s — topic too complex for {self.model}")
             return state
         except Exception as e:
-            print(f"   [Writer Error] 通信エラー: {e}")
+            print(f"   [Writer Error] {e}")
             return state
