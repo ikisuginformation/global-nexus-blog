@@ -1,73 +1,176 @@
 ---
-import BlogPost from '../layouts/BlogPost.astro';
+// src/pages/privacy.astro
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BlogPost
-    title="Legal Information"
-    description="Privacy policy, affiliate disclosure, and terms of use for Global Nexus."
-    readTime="4 min read"
+<BaseLayout
+  title="Privacy Policy — Global Nexus Media"
+  description="Privacy Policy for Global Nexus Media. How we collect, use, and protect your data."
 >
+  <article class="legal-page">
+    <h1>Privacy Policy</h1>
+    <p class="last-updated">Last updated: March 2026</p>
 
-<h2>Affiliate Disclaimer</h2>
+    <p>
+      This Privacy Policy describes how Global Nexus Media ("we", "us", or "our")
+      collects, uses, and shares information when you visit
+      <strong>global-nexus-blog.pages.dev</strong> (the "Site").
+    </p>
 
-<p>
-Global Nexus participates in affiliate marketing programs. We may earn commissions on products purchased through links on this site. This disclosure is provided in accordance with the FTC's 16 CFR § 255.5 (United States) and equivalent regulations in other jurisdictions.
-</p>
+    <h2>1. Information We Collect</h2>
+    <p>
+      We collect limited information automatically when you visit the Site,
+      including your IP address, browser type, pages visited, and referring URLs.
+      This data is collected through Cloudflare Web Analytics and is used solely
+      to understand site performance. We do not collect personally identifiable
+      information unless you voluntarily provide it (e.g., via email contact).
+    </p>
 
-<p>
-Affiliate relationships do not influence editorial content. Topic selection and article structure are determined algorithmically based on audience relevance and search intent — not on advertiser direction or commissions.
-</p>
+    <h2>2. Cookies</h2>
+    <p>
+      The Site uses cookies and similar tracking technologies for analytics and
+      affiliate link tracking. Specifically:
+    </p>
+    <ul>
+      <li>
+        <strong>Analytics cookies:</strong> We use Cloudflare Web Analytics,
+        which is privacy-first and does not use cookies to track individuals
+        across sites.
+      </li>
+      <li>
+        <strong>Affiliate tracking cookies:</strong> When you click an affiliate
+        link on this Site, third-party affiliate networks (including Impact.com)
+        may place a cookie in your browser to attribute any subsequent purchase
+        to our referral. These cookies do not store personal information beyond
+        what is necessary for commission tracking.
+      </li>
+    </ul>
+    <p>
+      You can disable cookies in your browser settings at any time. Disabling
+      cookies will not affect your ability to read our content.
+    </p>
 
-<p>
-**Products currently linked on this site include:** Bitget (cryptocurrency exchange), NordVPN, and Amazon-affiliated products. These are selected by an automated system based on contextual relevance to each article.
-</p>
+    <h2>3. Affiliate Disclosure</h2>
+    <p>
+      Global Nexus Media participates in affiliate marketing programs. This means
+      that some links on this Site are affiliate links — if you click one and make
+      a purchase, we may earn a commission at no additional cost to you.
+    </p>
+    <p>
+      We are a participant in the following affiliate programs:
+    </p>
+    <ul>
+      <li>Semrush Affiliate Program (via Impact.com)</li>
+      <li>NordVPN Affiliate Program</li>
+      <li>Amazon Associates Program</li>
+    </ul>
+    <p>
+      All affiliate relationships are disclosed at the top of any article that
+      contains affiliate links. Our editorial opinions are independent and are
+      not influenced by affiliate relationships.
+    </p>
 
-<h2>Privacy Policy</h2>
+    <h2>4. Third-Party Services</h2>
+    <p>
+      We use the following third-party services that may collect data:
+    </p>
+    <ul>
+      <li>
+        <strong>Cloudflare Pages</strong> — Site hosting. Cloudflare may log
+        access data per their
+        <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">
+          Privacy Policy
+        </a>.
+      </li>
+      <li>
+        <strong>Impact.com</strong> — Affiliate tracking platform. See
+        <a href="https://impact.com/privacy-policy/" target="_blank" rel="noopener">
+          Impact Privacy Policy
+        </a>.
+      </li>
+    </ul>
 
-<p>
-We collect minimal data necessary to operate this site. Specifically:
-</p>
+    <h2>5. Data Sharing</h2>
+    <p>
+      We do not sell, trade, or otherwise transfer your personal information to
+      third parties. Information may be shared only to the extent necessary to
+      operate the Site (e.g., hosting providers) or as required by law.
+    </p>
 
-<p>
-**Analytics:** This site uses standard web analytics to measure traffic, page performance, and article engagement. This data is aggregated and anonymized. No personally identifiable information is collected or stored.
-</p>
+    <h2>6. Data Retention</h2>
+    <p>
+      We retain analytics data in aggregate, anonymized form. We do not maintain
+      individual user profiles or browsing histories.
+    </p>
 
-<p>
-**Cookies:** Third-party services (including affiliate networks and analytics providers) may set cookies on your device. You can manage cookie preferences through your browser settings.
-</p>
+    <h2>7. Your Rights</h2>
+    <p>
+      Depending on your location, you may have rights under applicable privacy
+      laws (including GDPR for EU residents and relevant Japanese privacy law)
+      to access, correct, or delete personal information we hold about you.
+      To exercise these rights, contact us at the address below.
+    </p>
 
-<p>
-**Third-party links:** This site links to external services we do not control. Their privacy practices are governed by their own policies. We recommend reviewing the privacy policy of any external site before providing personal information.
-</p>
+    <h2>8. Children's Privacy</h2>
+    <p>
+      This Site is not directed at children under the age of 13. We do not
+      knowingly collect personal information from children.
+    </p>
 
-<p>
-**Data sharing:** We do not sell, trade, or transfer personally identifiable information to third parties. Aggregated, anonymized behavioral data may be used to optimize content and ad placement.
-</p>
+    <h2>9. Changes to This Policy</h2>
+    <p>
+      We may update this Privacy Policy from time to time. The "Last updated"
+      date at the top of this page will reflect any changes. Continued use of
+      the Site after changes constitutes acceptance of the updated policy.
+    </p>
 
-<h2>AI-Generated Content</h2>
+    <h2>10. Contact</h2>
+    <p>
+      If you have questions about this Privacy Policy, please contact us at:<br />
+      <strong>Email:</strong> legal@globalnexus.io<br />
+      <strong>Site:</strong> https://global-nexus-blog.pages.dev
+    </p>
+  </article>
+</BaseLayout>
 
-<p>
-Articles on this site are generated using AI language models. While the system is designed to produce accurate, well-structured information, readers should verify factual claims — particularly for financial, medical, or legal decisions — through authoritative primary sources.
-</p>
+<style>
+  .legal-page {
+    max-width: 720px;
+    margin: 4rem auto;
+    padding: 0 1.5rem;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--color-text, #2a2a2a);
+  }
 
-<p>
-Content reflects information available at the time of generation. It may not reflect recent developments.
-</p>
+  .legal-page h1 {
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+  }
 
-<h2>Jurisdiction</h2>
+  .last-updated {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 2.5rem;
+  }
 
-<p>
-This site is operated internationally. Compliance efforts cover GDPR (European Union), CCPA (California), and APPI (Japan). If you have a data-related request under any of these frameworks, contact information is available in the site footer.
-</p>
+  .legal-page h2 {
+    font-size: 1.2rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
 
-<h2>Changes to This Policy</h2>
+  .legal-page ul {
+    padding-left: 1.5rem;
+  }
 
-<p>
-This page may be updated as the platform evolves. Continued use of the site after changes constitutes acceptance of the revised policy.
-</p>
+  .legal-page li {
+    margin-bottom: 0.5rem;
+  }
 
-<p>
-Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-</p>
-
-</BlogPost>
+  .legal-page a {
+    color: inherit;
+    text-decoration: underline;
+  }
+</style>
