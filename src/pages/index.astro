@@ -1,285 +1,314 @@
 ---
-import { getCollection } from 'astro:content';
+// index.astro — Global Nexus Homepage
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ArticleCard from '../components/ArticleCard.astro';
-import SearchOverlay from '../components/SearchOverlay.astro';
+import { getCollection } from 'astro:content';
 
-const posts = (await getCollection('blog')).sort((a, b) => {
-    const dateA = a.data.date ? new Date(a.data.date).valueOf() : 0;
-    const dateB = b.data.date ? new Date(b.data.date).valueOf() : 0;
-    return dateB - dateA;
-});
+const posts = (await getCollection('posts'))
+  .sort((a, b) => new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime());
 
-const heroPost = posts[0];
-const gridPosts = posts.slice(1);
+const featured = posts[0];
+const indexPosts = posts.slice(1, 6);
+const gridPosts = posts.slice(1, 7);
+
+// Litho icon SVG strings per category
+const lithoSVG: Record<string, string> = {
+  'vpn-privacy': `<circle cx="9" cy="9" r="1.4" fill="#8A4E28" opacity=".50"/><circle cx="16" cy="9" r="1.4" fill="#8A4E28" opacity=".50"/><circle cx="23" cy="9" r="1.4" fill="#8A4E28" opacity=".50"/><circle cx="12" cy="15" r="1.4" fill="#8A4E28" opacity=".44"/><circle cx="19" cy="15" r="1.4" fill="#8A4E28" opacity=".44"/><circle cx="26" cy="15" r="1.4" fill="#8A4E28" opacity=".44"/><circle cx="9" cy="21" r="1.4" fill="#8A4E28" opacity=".36"/><circle cx="16" cy="21" r="1.4" fill="#8A4E28" opacity=".36"/><circle cx="23" cy="21" r="1.4" fill="#8A4E28" opacity=".36"/>`,
+  'b2b-saas': `<line x1="8" y1="4" x2="8" y2="11" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="4.5" y1="7.5" x2="11.5" y2="7.5" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="22" y1="4" x2="22" y2="11" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="18.5" y1="7.5" x2="25.5" y2="7.5" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="15" y1="14" x2="15" y2="21" stroke="#7A9260" stroke-width=".9" opacity=".48"/><line x1="11.5" y1="17.5" x2="18.5" y2="17.5" stroke="#7A9260" stroke-width=".9" opacity=".48"/>`,
+  'blockchain': `<rect x="2" y="4" width="11" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".52"/><rect x="15" y="4" width="17" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".52"/><rect x="2" y="11" width="7" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".45"/><rect x="11" y="11" width="21" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".45"/>`,
+  'strategy': `<circle cx="17" cy="17" r="11" stroke="#5A6858" stroke-width=".9"/><path d="M17 7.5 L18.4 14.5 L17 17 L15.6 14.5 Z" fill="rgba(90,104,88,.55)" stroke="#5A6858" stroke-width=".6"/>`,
+  'behavior': `<path d="M2 8 Q9 5.5 17 8 Q25 10.5 32 8" stroke="#A88820" stroke-width=".9" fill="none" opacity=".55"/><path d="M2 15 Q9 12.5 17 15 Q25 17.5 32 15" stroke="#A88820" stroke-width=".9" fill="none" opacity=".48"/><path d="M2 22 Q9 19.5 17 22 Q25 24.5 32 22" stroke="#A88820" stroke-width=".9" fill="none" opacity=".38"/>`,
+  'critique': `<rect x="3" y="4" width="28" height="26" fill="none" stroke="#6A5C48" stroke-width=".7" opacity=".28"/><rect x="4" y="5" width="26" height="4" fill="#6A5C48" opacity=".20"/><rect x="4" y="11" width="26" height="4" fill="#6A5C48" opacity=".17"/><line x1="17" y1="4" x2="16.5" y2="30" stroke="#6A5C48" stroke-width=".5" stroke-dasharray="2,3" opacity=".22"/>`,
+};
+
+const catColors: Record<string, string> = {
+  'vpn-privacy': 'var(--rust)',
+  'b2b-saas': 'var(--lichen)',
+  'blockchain': 'var(--slate)',
+  'strategy': 'var(--slate)',
+  'behavior': 'var(--ochre)',
+  'critique': 'var(--rust)',
+};
+
+const categoryDisplay: Record<string, string> = {
+  'vpn-privacy': 'VPN · Privacy',
+  'b2b-saas': 'B2B · SaaS',
+  'blockchain': 'Blockchain',
+  'strategy': 'Strategy',
+  'behavior': 'Behavior',
+  'critique': 'Critique',
+};
 ---
 
-<BaseLayout title="Global Nexus" description="Intelligence from the intersection of technology, capital, and culture." fullBleed={true}>
+<BaseLayout
+  title="Global Nexus"
+  description="Independent analysis of technology, media, and digital markets. No advertising. No sponsored content."
+>
 
-    <SearchOverlay />
+<!-- VALUE PROPOSITION STRIP -->
+<div class="value-strip">
+  <span class="value-text">Independent analysis of technology, media, and markets</span>
+  <span class="value-tag">No advertising · No sponsored content</span>
+</div>
 
-    <!-- Hero — full-bleed, no container -->
-    {heroPost && (
-        <a href={`/blog/${heroPost.slug}/`} class="hero-link" aria-label={`Read: ${heroPost.data.title}`}>
-            <section class="gn-hero">
-                <div class="hero-inner">
-                    <div class="hero-eyebrow">
-                        <span class="pulse-dot" aria-hidden="true"></span>
-                        <span>Latest</span>
-                    </div>
-                    <h1 class="hero-title">{heroPost.data.title}</h1>
-                    {heroPost.data.description && (
-                        <p class="hero-description">{heroPost.data.description}</p>
-                    )}
-                    <span class="hero-cta">Read →</span>
-                </div>
-            </section>
-        </a>
-    )}
-
-    <!-- Section header -->
-    <div class="section-header">
-        <div class="section-header-inner">
-            <span class="section-label">Archive</span>
-            <button class="open-search-btn section-search" aria-label="Search">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="7.5"/><line x1="17" y1="17" x2="22.5" y2="22.5"/>
-                </svg>
-                <span>Search</span>
-            </button>
-        </div>
+<!-- HERO: φ-split featured + index -->
+<section class="hero" aria-label="Featured article">
+  <!-- LEFT: Featured article -->
+  <div class="hero-main">
+    <div class="feat-eyebrow">
+      <span class="feat-cat">{categoryDisplay[featured.data.categorySlug] ?? featured.data.category}</span>
+      <div class="eyebrow-sep" aria-hidden="true"></div>
+      <span class="feat-id">{featured.data.articleId}</span>
     </div>
 
-    <!-- Article grid -->
-    {gridPosts.length > 0 ? (
-        <div class="gn-gallery">
-            {gridPosts.map((post, i) => (
-                <ArticleCard post={post} index={i} />
-            ))}
-        </div>
-    ) : (
-        <div class="empty-state">
-            <p>No articles yet. The engine is running.</p>
-        </div>
-    )}
+    <h1 class="feat-title">{featured.data.title}</h1>
+    <div class="feat-rule" aria-hidden="true"></div>
 
-    <!-- Footer -->
-    <footer class="gn-footer">
-        <div class="gn-footer-inner">
-            <span class="gn-footer-copy">© {new Date().getFullYear()} Global Nexus Media</span>
-            <div class="gn-footer-links">
-                <a href="/about">About</a>
-                <a href="/privacy">Legal</a>
-            </div>
+    <p class="feat-excerpt">
+      <strong>{featured.data.hook}</strong>
+      {featured.data.description}
+    </p>
+
+    <div class="feat-foot">
+      <time class="feat-date" datetime={featured.data.pubDate}>
+        {new Date(featured.data.pubDate).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}
+      </time>
+      <a href={`/posts/${featured.slug}`} class="feat-cta">
+        <span>Read analysis →</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- RIGHT: Recent index -->
+  <div class="hero-index" aria-label="Recent observations">
+    <div class="idx-hd">Recent observations</div>
+
+    {indexPosts.map(post => (
+      <a href={`/posts/${post.slug}`} class="idx-row">
+        <svg class="idx-icon" viewBox="0 0 34 34" fill="none"
+          set:html={lithoSVG[post.data.categorySlug] ?? lithoSVG['critique']}
+          aria-hidden="true"/>
+        <div class="idx-text">
+          <span class="idx-cat" style={`color:${catColors[post.data.categorySlug]??'var(--moss)'}`}>
+            {categoryDisplay[post.data.categorySlug] ?? post.data.category}
+          </span>
+          <span class="idx-title">{post.data.title}</span>
+          <span class="idx-meta">
+            {new Date(post.data.pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+            · {post.data.readingMinutes} min
+          </span>
         </div>
-    </footer>
+      </a>
+    ))}
+  </div>
+</section>
+
+<!-- ARCHIVE GRID -->
+<section class="archive" aria-label="Article archive">
+  <div class="arc-hd">
+    <span class="arc-label">All observations</span>
+    <a href="/archive" class="arc-more">View full archive →</a>
+  </div>
+
+  <div class="card-grid">
+    {gridPosts.map(post => (
+      <a href={`/posts/${post.slug}`} class="card"
+         style={`--cc:${catColors[post.data.categorySlug]??'var(--moss)'}`}>
+        <div class="card-top">
+          <svg class="card-icon" viewBox="0 0 34 34" fill="none"
+            set:html={lithoSVG[post.data.categorySlug] ?? lithoSVG['critique']}
+            aria-hidden="true"/>
+          <div class="card-meta">
+            <span class="card-cat">{categoryDisplay[post.data.categorySlug] ?? post.data.category}</span>
+            <span class="card-num">{post.data.articleId}</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">{post.data.title}</div>
+          <div class="card-excerpt">{post.data.description}</div>
+          <div class="card-foot">
+            <time class="card-date" datetime={post.data.pubDate}>
+              {new Date(post.data.pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+            </time>
+            <span class="card-min">{post.data.readingMinutes} min</span>
+          </div>
+        </div>
+      </a>
+    ))}
+  </div>
+</section>
+
+<!-- TOOLS / AFFILIATE PREVIEW -->
+<section class="tools-preview" aria-label="Recommended tools">
+  <div class="tp-inner">
+    <div class="tp-text">
+      <span class="tp-eyebrow">Vetted Tools</span>
+      <h2 class="tp-h2">Tools we've tested and can recommend without reservation</h2>
+      <p class="tp-desc">Every tool listed here has been independently evaluated. We earn a commission on purchases through these links — which is disclosed on every article that uses them.</p>
+      <a href="/tools" class="tp-cta">See all vetted tools →</a>
+    </div>
+    <div class="tp-grid">
+      <a href="/go/semrush" class="tp-card" target="_blank" rel="noopener" aria-label="Semrush — Try free (affiliate link)">
+        <span class="tp-card-cat">SEO · B2B</span>
+        <span class="tp-card-name">Semrush</span>
+        <span class="tp-card-verdict">Recommended</span>
+        <span class="tp-card-cta">Try free →</span>
+      </a>
+      <a href="/go/ahrefs" class="tp-card" target="_blank" rel="noopener" aria-label="Ahrefs — Start trial (affiliate link)">
+        <span class="tp-card-cat">SEO · Research</span>
+        <span class="tp-card-name">Ahrefs</span>
+        <span class="tp-card-verdict">Conditional</span>
+        <span class="tp-card-cta">Start trial →</span>
+      </a>
+      <a href="/go/nordvpn" class="tp-card" target="_blank" rel="noopener" aria-label="NordVPN — See analysis (affiliate link)">
+        <span class="tp-card-cat">VPN · Privacy</span>
+        <span class="tp-card-name">NordVPN</span>
+        <span class="tp-card-verdict">Conditional</span>
+        <span class="tp-card-cta">See analysis →</span>
+      </a>
+    </div>
+    <p class="tp-disc">These are affiliate links. <a href="/affiliate-disclosure">Full disclosure policy →</a></p>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section class="home-nl" aria-label="Newsletter signup">
+  <div class="hnl-inner">
+    <div class="hnl-left">
+      <span class="hnl-eyebrow">Free Newsletter</span>
+      <h2 class="hnl-h2">One independent analysis per week</h2>
+      <p class="hnl-desc">No filler. No advertising. Unsubscribe any time.</p>
+    </div>
+    <form class="hnl-form" action="/api/subscribe" method="POST">
+      <label for="hnl-email" class="sr-only">Email address</label>
+      <input type="email" id="hnl-email" name="email"
+        placeholder="your@email.com" required class="hnl-input"/>
+      <button type="submit" class="hnl-btn">Subscribe →</button>
+    </form>
+  </div>
+</section>
 
 </BaseLayout>
 
 <style>
-    /* ── Hero ────────────────────────────────────────────────────────────────── */
-    .hero-link {
-        display: block;
-        text-decoration: none;
-        color: inherit;
-    }
+/* Value strip */
+.value-strip{margin-top:50px;background:var(--moss);padding:var(--s2) var(--s6);display:flex;align-items:center;justify-content:space-between}
+.value-text{font-family:var(--mono);font-size:.44rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.value-tag{font-family:var(--mono);font-size:.40rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.45)}
 
-    .gn-hero {
-        position: relative;
-        min-height: 85vh;
-        display: flex;
-        align-items: flex-end;
-        padding: clamp(3rem, 8vh, 6rem) clamp(1.5rem, 6vw, 6rem);
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        cursor: pointer;
-        transition: background 0.6s ease;
-    }
+/* Hero */
+.hero{display:grid;grid-template-columns:61.8% 38.2%;min-height:calc(100vh - 86px);border-bottom:1px solid var(--rule)}
 
-    .gn-hero:hover {
-        background: rgba(5, 4, 9, 0.25);
-    }
+/* Left */
+.hero-main{padding:var(--s8) var(--s6) var(--s6);display:flex;flex-direction:column;justify-content:flex-end;border-right:1px solid var(--rule);background:var(--paper)}
+.feat-eyebrow{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4)}
+.feat-cat{font-family:var(--mono);font-size:.44rem;letter-spacing:.22em;text-transform:uppercase;color:var(--moss)}
+.eyebrow-sep{width:1px;height:10px;background:var(--rule)}
+.feat-id{font-family:var(--mono);font-size:.40rem;letter-spacing:.14em;color:var(--pale)}
+.feat-title{font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(2.6rem,4.8vw,5rem);line-height:1.04;color:var(--deep);margin-bottom:var(--s4);max-width:20ch;animation:title-breathe 8s ease-in-out infinite}
+@keyframes title-breathe{0%,100%{letter-spacing:-.015em}50%{letter-spacing:.025em}}
+.feat-rule{width:var(--s6);height:1px;background:var(--moss);margin-bottom:var(--s4)}
+.feat-excerpt{font-family:var(--body);font-size:1.06rem;line-height:1.618;color:var(--umber);max-width:52ch;margin-bottom:var(--s5)}
+.feat-excerpt strong{color:var(--deep);font-weight:500}
+.feat-foot{display:flex;align-items:center;gap:var(--s4)}
+.feat-date{font-family:var(--mono);font-size:.44rem;letter-spacing:.16em;text-transform:uppercase;color:var(--pale)}
+.feat-cta{display:inline-flex;align-items:center;gap:var(--s2);font-family:var(--mono);font-size:.48rem;letter-spacing:.16em;text-transform:uppercase;color:var(--deep);text-decoration:none;border:1.5px solid var(--oak);padding:var(--s2) var(--s4);position:relative;overflow:hidden;transition:color .32s,gap .25s}
+.feat-cta::before{content:'';position:absolute;inset:0;background:var(--deep);transform:translateX(-101%);transition:transform .38s cubic-bezier(.4,0,.2,1)}
+.feat-cta span{position:relative;z-index:1}
+.feat-cta:hover::before{transform:translateX(0)}
+.feat-cta:hover{color:var(--paper);gap:var(--s3)}
 
-    .hero-inner {
-        max-width: 900px;
-        position: relative;
-        z-index: 1;
-    }
+/* Right index */
+.hero-index{background:var(--sheet);display:flex;flex-direction:column;padding:var(--s7) var(--s4) var(--s4) var(--s5)}
+.idx-hd{font-family:var(--mono);font-size:.42rem;letter-spacing:.26em;text-transform:uppercase;color:var(--pale);padding-bottom:var(--s3);margin-bottom:var(--s2);border-bottom:1px solid var(--rule)}
+.idx-row{text-decoration:none;display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s3) 0;border-bottom:1px solid var(--rule-s);position:relative}
+.idx-row:last-child{border-bottom:none}
+.idx-row::before{content:'';position:absolute;top:0;left:calc(-1*var(--s5));bottom:0;width:2px;background:currentColor;opacity:0;transition:opacity .3s}
+.idx-row:hover::before{opacity:.4}
+.idx-icon{width:26px;height:26px;flex-shrink:0;margin-top:2px;opacity:.52;transition:opacity .3s}
+.idx-row:hover .idx-icon{opacity:.85}
+.idx-text{flex:1;display:flex;flex-direction:column;gap:3px}
+.idx-cat{font-family:var(--mono);font-size:.38rem;letter-spacing:.18em;text-transform:uppercase}
+.idx-title{font-family:var(--serif);font-size:.98rem;font-style:italic;font-weight:600;line-height:1.18;color:var(--deep);transition:color .2s}
+.idx-row:hover .idx-title{color:var(--moss)}
+.idx-meta{font-family:var(--mono);font-size:.36rem;letter-spacing:.12em;color:var(--pale)}
 
-    .hero-eyebrow {
-        display: flex;
-        align-items: center;
-        gap: 0.7rem;
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: 0.68rem;
-        letter-spacing: 0.30em;
-        text-transform: uppercase;
-        color: rgba(185, 158, 110, 0.65);
-        margin-bottom: 2rem;
-    }
+/* Archive */
+.archive{border-top:1px solid var(--rule)}
+.arc-hd{display:flex;align-items:center;justify-content:space-between;padding:var(--s2) var(--s6);border-bottom:1px solid var(--rule);background:var(--sheet)}
+.arc-label{font-family:var(--serif);font-size:.94rem;font-style:italic;color:var(--umber)}
+.arc-more{font-family:var(--mono);font-size:.42rem;letter-spacing:.16em;text-transform:uppercase;color:var(--moss);text-decoration:none}
+.arc-more:hover{text-decoration:underline}
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr)}
+.card{text-decoration:none;display:flex;flex-direction:column;border-right:1px solid var(--rule-s);border-bottom:1px solid var(--rule-s);background:var(--paper);position:relative;overflow:hidden;transition:background .4s .04s}
+.card:nth-child(3n){border-right:none}
+.card:hover{background:var(--sheet);transition-delay:0s}
+.card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px;background:var(--cc,var(--moss));opacity:0;transition:opacity .3s}
+.card:hover::before{opacity:.5}
+.card::after{content:'';position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(180deg,transparent 0,transparent 31px,rgba(28,23,16,.030) 31px,rgba(28,23,16,.030) 32px);opacity:0;transition:opacity .4s}
+.card:hover::after{opacity:1}
+.card-top{padding:var(--s4) var(--s4) 0;display:flex;align-items:flex-start;gap:var(--s3)}
+.card-icon{width:34px;height:34px;flex-shrink:0;opacity:.52;transition:opacity .3s}
+.card:hover .card-icon{opacity:.80}
+.card-meta{display:flex;flex-direction:column;gap:2px;padding-top:3px}
+.card-cat{font-family:var(--mono);font-size:.38rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cc,var(--moss))}
+.card-num{font-family:var(--mono);font-size:.36rem;letter-spacing:.12em;color:var(--pale)}
+.card-body{padding:var(--s2) var(--s4) var(--s4);flex:1;display:flex;flex-direction:column;gap:var(--s2)}
+.card-title{font-family:var(--serif);font-size:1.10rem;font-style:italic;font-weight:600;line-height:1.15;color:var(--deep);transition:color .2s}
+.card:hover .card-title{color:var(--cc,var(--moss))}
+.card-excerpt{font-family:var(--body);font-size:.86rem;line-height:1.618;color:var(--silt);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-foot{margin-top:auto;padding-top:var(--s2);border-top:1px solid var(--rule-s);display:flex;align-items:center;justify-content:space-between}
+.card-date,.card-min{font-family:var(--mono);font-size:.36rem;letter-spacing:.12em;text-transform:uppercase;color:var(--pale)}
 
-    .pulse-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: rgba(185, 158, 110, 0.8);
-        animation: pulse 2.5s ease-in-out infinite;
-    }
+/* Tools preview */
+.tools-preview{border-top:1px solid var(--rule);background:var(--laid);padding:var(--s6) var(--s6)}
+.tp-inner{max-width:1200px;margin:0 auto}
+.tp-eyebrow{font-family:var(--mono);font-size:.40rem;letter-spacing:.22em;text-transform:uppercase;color:var(--moss);display:block;margin-bottom:var(--s2)}
+.tp-h2{font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(1.4rem,3vw,2rem);color:var(--deep);margin-bottom:var(--s2);max-width:40ch}
+.tp-desc{font-family:var(--body);font-size:.94rem;line-height:1.618;color:var(--umber);max-width:52ch;margin-bottom:var(--s4)}
+.tp-cta{font-family:var(--mono);font-size:.44rem;letter-spacing:.18em;text-transform:uppercase;color:var(--moss);text-decoration:none;display:inline-block;margin-bottom:var(--s5)}
+.tp-cta:hover{text-decoration:underline}
+.tp-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);margin-bottom:var(--s3)}
+.tp-card{text-decoration:none;padding:var(--s4);border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:var(--s1);transition:background .25s;background:var(--paper)}
+.tp-card:last-child{border-right:none}
+.tp-card:hover{background:var(--sheet)}
+.tp-card-cat{font-family:var(--mono);font-size:.36rem;letter-spacing:.16em;text-transform:uppercase;color:var(--pale)}
+.tp-card-name{font-family:var(--serif);font-size:1.05rem;font-style:italic;font-weight:600;color:var(--deep)}
+.tp-card-verdict{font-family:var(--mono);font-size:.36rem;letter-spacing:.12em;text-transform:uppercase;color:var(--moss)}
+.tp-card-cta{font-family:var(--mono);font-size:.40rem;letter-spacing:.14em;text-transform:uppercase;color:var(--moss);margin-top:auto}
+.tp-disc{font-family:var(--mono);font-size:.34rem;letter-spacing:.10em;text-transform:uppercase;color:var(--pale)}
+.tp-disc a{color:var(--moss);text-decoration:none}.tp-disc a:hover{text-decoration:underline}
 
-    @keyframes pulse {
-        0%, 100% { opacity: 0.4; transform: scale(1); }
-        50%       { opacity: 1.0; transform: scale(1.3); }
-    }
+/* Newsletter */
+.home-nl{border-top:1px solid var(--rule);background:var(--sheet);padding:var(--s5) var(--s6)}
+.hnl-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:var(--s7)}
+.hnl-eyebrow{font-family:var(--mono);font-size:.40rem;letter-spacing:.22em;text-transform:uppercase;color:var(--moss);display:block;margin-bottom:var(--s2)}
+.hnl-h2{font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(1.4rem,3vw,2rem);color:var(--deep);margin-bottom:var(--s2)}
+.hnl-desc{font-family:var(--body);font-size:.92rem;color:var(--silt)}
+.hnl-form{display:flex;gap:var(--s2);flex-shrink:0}
+.hnl-input{font-family:var(--mono);font-size:.48rem;letter-spacing:.10em;padding:var(--s3);border:1.5px solid var(--rule);background:var(--paper);color:var(--deep);outline:none;min-width:240px;transition:border-color .2s}
+.hnl-input:focus{border-color:var(--moss)}
+.hnl-input::placeholder{color:var(--pale)}
+.hnl-btn{font-family:var(--mono);font-size:.48rem;letter-spacing:.16em;text-transform:uppercase;padding:var(--s3) var(--s4);background:var(--deep);color:var(--paper);border:none;cursor:pointer;white-space:nowrap;transition:background .2s}
+.hnl-btn:hover{background:var(--moss)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
 
-    .hero-title {
-        font-family: 'Playfair Display', Georgia, serif;
-        font-size: clamp(2.8rem, 7vw, 6.5rem);
-        font-weight: 900;
-        font-style: italic;
-        line-height: 1.04;
-        letter-spacing: -0.02em;
-        color: rgba(230, 224, 215, 0.96);
-        text-shadow: none;
-        margin-bottom: 1.5rem;
-        max-width: 820px;
-    }
-
-    .hero-description {
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: clamp(1.05rem, 1.8vw, 1.3rem);
-        line-height: 1.65;
-        color: rgba(155, 148, 138, 0.75);
-        max-width: 600px;
-        margin-bottom: 2rem;
-    }
-
-    .hero-cta {
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: 0.72rem;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
-        color: rgba(185, 158, 110, 0.60);
-        transition: color 0.3s ease;
-    }
-
-    .gn-hero:hover .hero-cta {
-        color: rgba(185, 158, 110, 0.90);
-    }
-
-    /* ── Section header ─────────────────────────────────────────────────────── */
-    .section-header {
-        padding: 0 clamp(1.5rem, 6vw, 6rem);
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .section-header-inner {
-        max-width: 1400px;
-        margin: 0 auto;
-        height: 3.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .section-label {
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: 0.65rem;
-        letter-spacing: 0.35em;
-        text-transform: uppercase;
-        color: rgba(140, 134, 126, 0.45);
-    }
-
-    .section-search {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: 0.65rem;
-        letter-spacing: 0.28em;
-        text-transform: uppercase;
-        color: rgba(140, 134, 126, 0.45);
-        padding: 0;
-        transition: color 0.25s;
-    }
-
-    .section-search:hover {
-        color: rgba(185, 158, 110, 0.75);
-    }
-
-    /* ── Gallery grid ────────────────────────────────────────────────────────── */
-    .gn-gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
-        perspective: 1200px;
-        padding: clamp(1.5rem, 4vw, 3rem) clamp(1.5rem, 6vw, 6rem);
-        gap: 0;
-        max-width: 1600px;
-        margin: 0 auto;
-    }
-
-    /* ── Empty state ─────────────────────────────────────────────────────────── */
-    .empty-state {
-        padding: 8rem clamp(1.5rem, 6vw, 6rem);
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: 0.72rem;
-        letter-spacing: 0.25em;
-        text-transform: uppercase;
-        color: rgba(140, 134, 126, 0.35);
-    }
-
-    /* ── Footer ──────────────────────────────────────────────────────────────── */
-    .gn-footer {
-        border-top: 1px solid rgba(255,255,255,0.05);
-        padding: 2.5rem clamp(1.5rem, 6vw, 6rem);
-        margin-top: 2rem;
-    }
-
-    .gn-footer-inner {
-        max-width: 1600px;
-        margin: 0 auto;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .gn-footer-copy {
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: 0.65rem;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
-        color: rgba(140, 134, 126, 0.35);
-    }
-
-    .gn-footer-links {
-        display: flex;
-        gap: 2rem;
-    }
-
-    .gn-footer-links a {
-        font-family: 'EB Garamond', Georgia, serif;
-        font-size: 0.65rem;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
-        color: rgba(140, 134, 126, 0.35);
-        text-decoration: none;
-        transition: color 0.25s;
-    }
-
-    .gn-footer-links a:hover {
-        color: rgba(185, 158, 110, 0.65);
-    }
-
-    @media (max-width: 767px) {
-        .gn-hero {
-            min-height: 70vh;
-            padding-bottom: 5rem;
-        }
-        .gn-gallery {
-            padding: 0;
-        }
-    }
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;min-height:auto}
+  .hero-index{display:none}
+  .hero-main{padding:var(--s6) var(--s4) var(--s5)}
+  .card-grid{grid-template-columns:1fr 1fr}
+  .card:nth-child(2n){border-right:none}
+  .card:nth-child(3n){border-right:1px solid var(--rule-s)}
+  .tp-grid{grid-template-columns:1fr}
+  .tp-card{border-right:none;border-bottom:1px solid var(--rule)}
+  .hnl-inner{flex-direction:column;align-items:flex-start}
+  .hnl-form{width:100%}
+  .tools-preview,.home-nl{padding:var(--s5) var(--s4)}
+  .value-strip{flex-direction:column;gap:var(--s1);align-items:flex-start;padding:var(--s2) var(--s4)}
+}
+@media(max-width:480px){
+  .card-grid{grid-template-columns:1fr}
+  .card:nth-child(3n){border-right:none}
+  .feat-title{font-size:2.4rem}
+}
 </style>

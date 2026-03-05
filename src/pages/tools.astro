@@ -1,0 +1,183 @@
+---
+// src/pages/tools.astro — Vetted Tools Hub
+// High-conversion affiliate page. Not a directory. A curated list with verdicts.
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const tools = [
+  {
+    name: "Semrush",
+    slug: "semrush",
+    category: "SEO · Competitive Intelligence",
+    verdict: "recommended",
+    price: "From $129/month",
+    trial: "14-day free trial",
+    summary: "The only tool that replaces Ahrefs, SimilarWeb, and Moz simultaneously. For B2B teams running SEO and competitive research, the tool consolidation case is financially straightforward.",
+    useFor: ["B2B marketing teams", "SEO agencies", "Competitive research"],
+    notFor: ["Local-only businesses", "First-time SEO users"],
+    article: "/posts/semrush-roi-cfos-miss",
+  },
+  {
+    name: "Ahrefs",
+    slug: "ahrefs",
+    category: "SEO · Backlink Research",
+    verdict: "conditional",
+    price: "From $99/month",
+    trial: "$7 for 7 days",
+    summary: "Superior backlink database and more intuitive interface than Semrush. The better choice if backlink research is your primary use case. Weaker competitive intelligence layer.",
+    useFor: ["Backlink analysis", "Content research", "Link building"],
+    notFor: ["Teams needing competitive traffic data", "PPC research"],
+    article: "/posts/ahrefs-vs-semrush-honest-comparison",
+  },
+  {
+    name: "NordVPN",
+    slug: "nordvpn",
+    category: "VPN · Privacy",
+    verdict: "conditional",
+    price: "From $3.99/month",
+    trial: "30-day money-back",
+    summary: "Recovered credibility after the 2018 breach. Suitable for the specific use cases where a VPN genuinely helps: public WiFi, geo-restricted content, basic IP masking. Not a privacy solution for high-risk threat models.",
+    useFor: ["Public network security", "Streaming geo-blocks", "Basic IP masking"],
+    notFor: ["Journalist-level anonymity", "Hiding activity from your ISP long-term"],
+    article: "/posts/vpn-industry-sells-problem",
+  },
+  {
+    name: "Surfer SEO",
+    slug: "surfer-seo",
+    category: "SEO · Content Optimization",
+    verdict: "conditional",
+    price: "From $89/month",
+    trial: "7-day free trial",
+    summary: "Content editor that scores your article against the top 10 ranking pages in real time. Genuine time-saver for content teams producing 8+ articles per month. Overhyped for smaller operations.",
+    useFor: ["Content teams at scale", "Writers without SEO background"],
+    notFor: ["Teams producing <4 articles/month", "Technical SEO work"],
+    article: null,
+  },
+];
+
+const verdictConfig = {
+  recommended: { color: "var(--moss)", label: "✓ Recommended" },
+  conditional:  { color: "var(--ochre)", label: "◎ Conditional" },
+  avoid:        { color: "var(--rust)", label: "✗ Avoid" },
+};
+---
+
+<BaseLayout
+  title="Vetted Tools"
+  description="Independently evaluated tools for SEO, privacy, and B2B marketing. Every recommendation includes real limitations."
+>
+
+<div class="tools-page">
+  <div class="tools-header">
+    <div class="th-inner">
+      <div class="th-meta">
+        <span class="th-eyebrow">Independent verdicts</span>
+        <h1 class="th-h1">Vetted Tools</h1>
+        <div class="th-rule"></div>
+        <p class="th-desc">Every tool here has been independently analyzed. We include real limitations alongside strengths. We earn a commission on purchases through these links — which doesn't change the analysis.</p>
+      </div>
+      <div class="th-disc-box">
+        <span class="th-disc-label">Affiliate disclosure</span>
+        <p class="th-disc-text">Global Nexus earns commissions on purchases through links on this page. This creates an obvious incentive to recommend everything. We address this by publishing real limitations and "not for" cases for every tool. <a href="/affiliate-disclosure">Full disclosure policy →</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tools-grid">
+    {tools.map(tool => {
+      const vc = verdictConfig[tool.verdict as keyof typeof verdictConfig];
+      return (
+        <div class="tool-card">
+          <div class="tc-header">
+            <div class="tc-name-row">
+              <span class="tc-verdict" style={`color:${vc.color}`}>{vc.label}</span>
+              <h2 class="tc-name">{tool.name}</h2>
+              <span class="tc-cat">{tool.category}</span>
+            </div>
+            <div class="tc-price-row">
+              <span class="tc-price">{tool.price}</span>
+              <span class="tc-trial">{tool.trial}</span>
+            </div>
+          </div>
+
+          <p class="tc-summary">{tool.summary}</p>
+
+          <div class="tc-usefor">
+            <div class="tcuf-col">
+              <span class="tcuf-label">Use for</span>
+              <ul class="tcuf-list tcuf-list--yes">
+                {tool.useFor.map(u => <li>{u}</li>)}
+              </ul>
+            </div>
+            <div class="tcuf-col">
+              <span class="tcuf-label">Not for</span>
+              <ul class="tcuf-list tcuf-list--no">
+                {tool.notFor.map(n => <li>{n}</li>)}
+              </ul>
+            </div>
+          </div>
+
+          <div class="tc-foot">
+            <a href={`/go/${tool.slug}`} class="tc-cta" target="_blank" rel="noopener">
+              <span>{tool.trial} →</span>
+            </a>
+            {tool.article && (
+              <a href={tool.article} class="tc-analysis">Read full analysis →</a>
+            )}
+          </div>
+          <span class="tc-aff-note">Affiliate link. Commission at no extra cost to you.</span>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+</BaseLayout>
+
+<style>
+.tools-page{padding-top:50px;background:var(--paper)}
+.tools-header{background:var(--sheet);border-bottom:1px solid var(--rule);padding:var(--s7) var(--s6) var(--s5)}
+.th-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr;gap:var(--s7);align-items:start}
+.th-eyebrow{font-family:var(--mono);font-size:.40rem;letter-spacing:.22em;text-transform:uppercase;color:var(--moss);display:block;margin-bottom:var(--s2)}
+.th-h1{font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(2.4rem,5vw,4rem);color:var(--deep);margin-bottom:var(--s2)}
+.th-rule{width:var(--s5);height:1px;background:var(--moss);margin-bottom:var(--s3)}
+.th-desc{font-family:var(--body);font-size:1.04rem;line-height:1.618;color:var(--umber);max-width:52ch}
+.th-disc-box{background:var(--paper);border:1px solid var(--rule);padding:var(--s4);align-self:center}
+.th-disc-label{font-family:var(--mono);font-size:.38rem;letter-spacing:.20em;text-transform:uppercase;color:var(--moss);display:block;margin-bottom:var(--s2)}
+.th-disc-text{font-family:var(--body);font-size:.88rem;line-height:1.618;color:var(--silt)}
+.th-disc-text a{color:var(--moss);text-decoration:none}.th-disc-text a:hover{text-decoration:underline}
+
+.tools-grid{max-width:1100px;margin:0 auto;padding:var(--s5) var(--s6);display:flex;flex-direction:column;gap:0}
+.tool-card{padding:var(--s5) 0;border-bottom:1px solid var(--rule)}
+.tool-card:last-child{border-bottom:none}
+
+.tc-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--s3)}
+.tc-name-row{display:flex;flex-direction:column;gap:var(--s1)}
+.tc-verdict{font-family:var(--mono);font-size:.40rem;letter-spacing:.18em;text-transform:uppercase;font-weight:500}
+.tc-name{font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(1.5rem,3vw,2.2rem);color:var(--deep)}
+.tc-cat{font-family:var(--mono);font-size:.38rem;letter-spacing:.16em;text-transform:uppercase;color:var(--pale)}
+.tc-price-row{display:flex;flex-direction:column;align-items:flex-end;gap:var(--s1)}
+.tc-price{font-family:var(--mono);font-size:.44rem;letter-spacing:.12em;color:var(--umber)}
+.tc-trial{font-family:var(--mono);font-size:.38rem;letter-spacing:.12em;text-transform:uppercase;color:var(--silt)}
+.tc-summary{font-family:var(--body);font-size:1.02rem;line-height:1.618;color:var(--oak);max-width:64ch;margin-bottom:var(--s4)}
+
+.tc-usefor{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5);margin-bottom:var(--s4);max-width:64ch}
+.tcuf-label{font-family:var(--mono);font-size:.36rem;letter-spacing:.16em;text-transform:uppercase;color:var(--pale);display:block;margin-bottom:var(--s2)}
+.tcuf-list{list-style:none;display:flex;flex-direction:column;gap:var(--s1)}
+.tcuf-list li{font-family:var(--body);font-size:.90rem;line-height:1.5;color:var(--oak);padding-left:var(--s3);position:relative}
+.tcuf-list--yes li::before{content:'✓';position:absolute;left:0;color:var(--moss);font-size:.70rem}
+.tcuf-list--no li::before{content:'✗';position:absolute;left:0;color:var(--rust);font-size:.70rem}
+
+.tc-foot{display:flex;align-items:center;gap:var(--s4);margin-bottom:var(--s1)}
+.tc-cta{display:inline-flex;align-items:center;font-family:var(--mono);font-size:.46rem;letter-spacing:.16em;text-transform:uppercase;color:var(--paper);background:var(--moss);padding:var(--s2) var(--s4);text-decoration:none;transition:background .2s}
+.tc-cta:hover{background:#3d5235}
+.tc-analysis{font-family:var(--mono);font-size:.44rem;letter-spacing:.14em;text-transform:uppercase;color:var(--moss);text-decoration:none}
+.tc-analysis:hover{text-decoration:underline}
+.tc-aff-note{font-family:var(--mono);font-size:.32rem;letter-spacing:.10em;text-transform:uppercase;color:var(--pale)}
+
+@media(max-width:768px){
+  .th-inner{grid-template-columns:1fr}
+  .tc-header{flex-direction:column;gap:var(--s2)}
+  .tc-price-row{align-items:flex-start}
+  .tools-header,.tools-grid{padding-left:var(--s4);padding-right:var(--s4)}
+}
+</style>

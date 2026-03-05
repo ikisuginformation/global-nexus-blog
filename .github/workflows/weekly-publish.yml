@@ -1,0 +1,123 @@
+# .github/workflows/weekly-publish.yml
+# Runs every Monday 08:00 JST (23:00 UTC Sunday)
+# Generates 2 articles, commits, and triggers Cloudflare Pages deploy
+
+name: Weekly Article Generation
+
+on:
+  schedule:
+    - cron: '0 23 * * 0'   # Sunday 23:00 UTC = Monday 08:00 JST
+  workflow_dispatch:         # Manual trigger from GitHub UI
+    inputs:
+      topic:
+        description: 'Article topic (leave empty for auto-selection)'
+        required: false
+      affiliate:
+        description: 'Primary affiliate key (semrush/ahrefs/nordvpn)'
+        required: false
+        default: 'semrush'
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install anthropic python-frontmatter
+
+      - name: Get next article ID
+        id: article-id
+        run: |
+          # Count existing posts and increment
+          COUNT=$(ls src/content/posts/*.md 2>/dev/null | wc -l)
+          NEXT=$((COUNT + 1))
+          ID=$(printf "GNX-%03d" $NEXT)
+          echo "id=$ID" >> $GITHUB_OUTPUT
+          echo "Next article ID: $ID"
+
+      - name: Generate articles
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Topic rotation — cycles through affiliate programs
+          WEEK=$(date +%V)
+          TOPICS=(
+            "semrush|Semrush review for B2B SaaS marketing teams|semrush review"
+            "ahrefs|Ahrefs vs Semrush for content teams|ahrefs review"
+            "nordvpn|NordVPN review 2026 — honest assessment|nordvpn review"
+            "expressvpn|ExpressVPN for remote workers|expressvpn review"
+            "surfer-seo|Surfer SEO review for content agencies|surfer seo review"
+            "semrush|Semrush keyword research workflow|semrush keyword research"
+            "ahrefs|Ahrefs backlink analysis guide|ahrefs backlink checker"
+          )
+          
+          # Select topic based on week number
+          IDX=$((WEEK % ${#TOPICS[@]}))
+          TOPIC_STR="${TOPICS[$IDX]}"
+          
+          # Override with manual input if provided
+          if [ -n "${{ github.event.inputs.topic }}" ]; then
+            AFFILIATE="${{ github.event.inputs.affiliate }}"
+            TOPIC="${{ github.event.inputs.topic }}"
+            KEYWORD="${{ github.event.inputs.topic }}"
+          else
+            IFS='|' read -r AFFILIATE TOPIC KEYWORD <<< "$TOPIC_STR"
+          fi
+          
+          echo "Generating: $TOPIC (affiliate: $AFFILIATE)"
+          
+          python ai_core/writer_agent.py article \
+            "$TOPIC" \
+            "$AFFILIATE" \
+            "$KEYWORD" \
+            "${{ steps.article-id.outputs.id }}"
+
+      - name: Run Astro build check
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+        continue-on-error: false  # Fail if build breaks
+
+      - name: Commit new articles
+        run: |
+          git config user.name "Global Nexus Bot"
+          git config user.email "bot@globalnexus.io"
+          git add src/content/posts/
+          
+          # Only commit if there are new files
+          if git diff --staged --quiet; then
+            echo "No new articles generated"
+          else
+            ARTICLE_COUNT=$(git diff --staged --name-only | wc -l)
+            git commit -m "feat: auto-generate ${ARTICLE_COUNT} article(s) [$(date +%Y-%m-%d)]"
+            git push
+            echo "✓ Pushed new articles — Cloudflare Pages will auto-deploy"
+          fi
+
+      - name: Post summary to Slack (optional)
+        if: success() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          curl -X POST "$SLACK_WEBHOOK" \
+            -H 'Content-type: application/json' \
+            --data '{"text":"✓ Global Nexus: weekly article published successfully"}'

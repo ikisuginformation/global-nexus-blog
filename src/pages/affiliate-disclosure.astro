@@ -1,0 +1,43 @@
+---
+// src/pages/affiliate-disclosure.astro
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Affiliate Disclosure" description="Global Nexus affiliate link disclosure policy. Full transparency on how we earn commissions.">
+<div class="disc-page">
+  <div class="disc-inner">
+    <div class="disc-header">
+      <span class="disc-eyebrow">Transparency</span>
+      <h1 class="disc-h1">Affiliate Disclosure</h1>
+      <div class="disc-rule"></div>
+      <p class="disc-lead">This disclosure applies to all content published on Global Nexus.</p>
+    </div>
+    <div class="disc-body">
+      <h2>What this means</h2>
+      <p>Some articles on this site contain affiliate links to tools and services we've analyzed. If you purchase a product through one of these links, Global Nexus earns a commission. This commission comes from the vendor, not from you — the price you pay is identical whether you use our link or navigate directly.</p>
+      <h2>What this doesn't mean</h2>
+      <p>Affiliate relationships do not determine our editorial positions. We include real limitations alongside strengths in every review. We use a "Conditional" verdict for tools we recommend with reservations, and we will publish "Avoid" verdicts for tools that don't meet our standards — even for tools where we have an affiliate relationship.</p>
+      <p>The presence of an affiliate link in an article does not mean we were paid to write that article, that we received the product for free, or that the analysis was approved by the vendor before publication.</p>
+      <h2>Which links are affiliate links</h2>
+      <p>All affiliate links on this site pass through <code>/go/{"{"}tool-name{"}"}</code> redirects. These pages display a brief disclosure before redirecting you to the vendor's site. Any link that does not pass through <code>/go/</code> is not an affiliate link.</p>
+      <p>Articles containing affiliate links display a disclosure banner at the top of the page.</p>
+      <h2>Programs we participate in</h2>
+      <p>We currently participate in or are applying to affiliate programs operated by Semrush, Ahrefs, NordVPN, ExpressVPN, Surfer SEO, SimilarWeb, and Moz. This list will be updated as new programs are added.</p>
+      <h2>Questions</h2>
+      <p>If you have questions about our affiliate relationships or believe an article's analysis has been compromised by a commercial relationship, contact us at <a href="mailto:editorial@globalnexus.io">editorial@globalnexus.io</a>.</p>
+    </div>
+  </div>
+</div>
+</BaseLayout>
+<style>
+.disc-page{padding-top:50px;background:var(--paper);min-height:100vh}
+.disc-inner{max-width:680px;margin:0 auto;padding:var(--s8) var(--s6) var(--s8)}
+.disc-eyebrow{font-family:var(--mono);font-size:.40rem;letter-spacing:.22em;text-transform:uppercase;color:var(--moss);display:block;margin-bottom:var(--s3)}
+.disc-h1{font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(2rem,5vw,3.5rem);color:var(--deep);margin-bottom:var(--s2)}
+.disc-rule{width:var(--s5);height:1px;background:var(--moss);margin-bottom:var(--s4)}
+.disc-lead{font-family:var(--body);font-size:1.08rem;line-height:1.618;color:var(--umber);margin-bottom:var(--s6);border-bottom:1px solid var(--rule);padding-bottom:var(--s5)}
+.disc-body h2{font-family:var(--serif);font-style:italic;font-weight:600;font-size:1.4rem;color:var(--deep);margin:var(--s5) 0 var(--s2)}
+.disc-body p{font-family:var(--body);line-height:1.618;color:var(--oak);margin-bottom:var(--s3)}
+.disc-body a{color:var(--moss);text-decoration:underline}
+.disc-body code{font-family:var(--mono);font-size:.80rem;background:var(--sheet);padding:2px 6px}
+@media(max-width:600px){.disc-inner{padding:var(--s6) var(--s4)}}
+</style>

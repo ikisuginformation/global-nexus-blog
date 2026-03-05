@@ -1,199 +1,257 @@
 ---
 // src/components/ArticleCard.astro
-// Gallery card — used for all posts except the hero (index 0).
-//
-// Desktop: Borderless floating card. Transparent at rest, glass emerges on hover.
-//          Z-axis depth via CSS perspective on parent. Playfair Display 0.08em wide.
-// Mobile:  Edge-to-edge list item. 1px antique gold hairline separator. No hover fx.
+// Glassmorphism article card that floats above the QuantumCanvas abyss.
+// Hover: border brightens, inner glow intensifies, slight Y-lift.
 
-import type { CollectionEntry } from 'astro:content';
-
-interface Props {
-  post:   CollectionEntry<'blog'>;
-  index?: number;
+export interface Props {
+  title:       string;
+  excerpt:     string;
+  href:        string;
+  date?:       string;
+  readTime?:   string;
+  tags?:       string[];
+  /** Optional: dominant accent override per card. Defaults to cyan. */
+  accent?:     'cyan' | 'violet' | 'gold';
 }
 
-const { post, index = 0 } = Astro.props;
-const { title, description, date } = post.data;
+const {
+  title,
+  excerpt,
+  href,
+  date,
+  readTime,
+  tags = [],
+  accent = 'cyan',
+} = Astro.props;
 
-const formattedDate = date.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-});
+// Accent colour map
+const accentMap = {
+  cyan:   { border: 'rgba(0, 212, 255, 0.30)',  glow: 'rgba(0, 212, 255, 0.12)',  tag: '#00d4ff'  },
+  violet: { border: 'rgba(155, 93, 229, 0.30)', glow: 'rgba(155, 93, 229, 0.12)', tag: '#9b5de5'  },
+  gold:   { border: 'rgba(201, 168, 76, 0.30)', glow: 'rgba(201, 168, 76, 0.12)', tag: '#c9a84c'  },
+};
+const ac = accentMap[accent];
+
+// Format date if provided
+let dateStr = '';
+if (date) {
+  try {
+    dateStr = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(date));
+  } catch { dateStr = date; }
+}
 ---
 
-<a href={`/blog/${post.slug}/`} class="article-card" data-index={index}>
-  <article>
-    <span class="card-date">{formattedDate}</span>
-    <h2 class="card-title">{title}</h2>
-    {description && <p class="card-excerpt">{description}</p>}
-    <span class="card-cta" aria-hidden="true">Read &rarr;</span>
-  </article>
+<a href={href} class={`article-card glass-panel accent-${accent}`} style={`--card-border: ${ac.border}; --card-glow: ${ac.glow}; --card-tag: ${ac.tag};`}>
+
+  <!-- ── Animated shimmer line at top edge ───────────────────────────── -->
+  <div class="card-shimmer" aria-hidden="true"></div>
+
+  <!-- ── Card body ──────────────────────────────────────────────────── -->
+  <div class="card-content">
+
+    <!-- Meta row -->
+    {(date || readTime) && (
+      <div class="card-meta">
+        {dateStr && <time datetime={date} class="card-date">{dateStr}</time>}
+        {dateStr && readTime && <span class="meta-divider">·</span>}
+        {readTime && <span class="card-readtime">{readTime}</span>}
+      </div>
+    )}
+
+    <!-- Title -->
+    <h3 class="card-title">{title}</h3>
+
+    <!-- Excerpt -->
+    <p class="card-excerpt">{excerpt}</p>
+
+    <!-- Tags -->
+    {tags.length > 0 && (
+      <div class="card-tags" role="list">
+        {tags.map(tag => (
+          <span class="card-tag" role="listitem">{tag}</span>
+        ))}
+      </div>
+    )}
+
+    <!-- Read CTA -->
+    <div class="card-cta" aria-hidden="true">
+      <span class="cta-text">Read article</span>
+      <span class="cta-arrow">→</span>
+    </div>
+
+  </div>
+
+  <!-- ── Corner accent glyph ─────────────────────────────────────────── -->
+  <div class="card-corner" aria-hidden="true">✦</div>
+
 </a>
 
 <style>
-  /* ── Base: shared between mobile and desktop ─────────────────────────────── */
+  /* ── Card shell ─────────────────────────────────────────────────── */
   .article-card {
-    display: block;
+    /* Override glass-panel border with accent colour */
+    border-color: var(--card-border) !important;
+    display:      block;
     text-decoration: none;
-    color: inherit;
-    position: relative;
-    padding: 2.2rem 2rem 2.5rem;
-  }
+    color:        inherit;
+    position:     relative;
+    overflow:     hidden;
+    padding:      0;
+    border-radius: 16px;
 
-  .article-card article {
-    position: relative;
-    z-index: 1;   /* above the ::before glass layer */
-  }
-
-  /* ── Desktop: floating glass-on-hover ────────────────────────────────────── */
-
-  /* Dark glass panel — invisible at rest, materialises on hover */
-  .article-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: transparent;
-    backdrop-filter: blur(0px);
-    -webkit-backdrop-filter: blur(0px);
+    /* Lift animation on hover */
+    transform:    translateY(0px);
     transition:
-      background     0.50s cubic-bezier(0.4, 0, 0.2, 1),
-      backdrop-filter 0.50s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-  }
-
-  /* Gold hairline at top — invisible at rest, appears on hover */
-  .article-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 2rem; right: 2rem;
-    height: 1px;
-    background: rgba(185, 158, 110, 0.0);
-    transition: background 0.45s ease;
-  }
-
-  /* Hover: card lifts toward viewer (perspective on .gn-gallery parent does the work) */
-  .article-card {
-    transition: transform 0.55s cubic-bezier(0.23, 1, 0.32, 1);
-    transform: translateZ(0);
-    will-change: transform;
+      transform   0.45s cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow  0.45s cubic-bezier(0.23, 1, 0.32, 1),
+      background  0.4s ease,
+      border-color 0.4s ease;
   }
 
   .article-card:hover {
-    transform: translateZ(22px) translateY(-3px);
+    transform:   translateY(-6px);
+    box-shadow:
+      0 0 0 1px var(--card-border) inset,
+      0 24px 64px rgba(0,0,0,0.75),
+      0 0 140px var(--card-glow),
+      0 0  60px var(--card-glow);
   }
 
-  .article-card:hover::before {
-    background: rgba(5, 4, 9, 0.54);
-    backdrop-filter: blur(14px) saturate(135%);
-    -webkit-backdrop-filter: blur(14px) saturate(135%);
+  /* ── Shimmer edge ────────────────────────────────────────────────── */
+  .card-shimmer {
+    position:   absolute;
+    top: 0; left: -100%;
+    width:  100%;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--card-tag),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .article-card:hover .card-shimmer {
+    opacity: 0.7;
+    left:    100%;
+    transition: left 0.7s ease, opacity 0.1s;
   }
 
-  .article-card:hover::after {
-    background: rgba(185, 158, 110, 0.26);
+  /* ── Content padding ─────────────────────────────────────────────── */
+  .card-content {
+    padding: 2rem 2rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
-  /* Date label */
-  .card-date {
-    display: block;
+  /* ── Meta ────────────────────────────────────────────────────────── */
+  .card-meta {
+    display:     flex;
+    align-items: center;
+    gap:         0.5rem;
     font-family: 'EB Garamond', Georgia, serif;
-    font-size: 0.67rem;
-    letter-spacing: 0.24em;
+    font-size:   0.72rem;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(140, 134, 126, 0.50);
-    margin-bottom: 0.8rem;
-    transition: color 0.35s ease;
+    color:       rgba(200, 190, 220, 0.5);
   }
-  .article-card:hover .card-date { color: rgba(185, 158, 110, 0.65); }
+  .meta-divider { opacity: 0.4; }
 
-  /* Title — Playfair Display with wide, expensive letter-spacing */
+  /* ── Title ───────────────────────────────────────────────────────── */
   .card-title {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: clamp(1.25rem, 2vw, 1.65rem);
-    font-weight: 700;
-    font-style: italic;
-    letter-spacing: 0.08em;   /* ultra-wide: the Urushi signature */
-    line-height: 1.22;
-    color: rgba(220, 214, 205, 0.88);
-    text-shadow: none;
-    margin-bottom: 0.8rem;
-    transition: color 0.35s ease, transform 0.55s cubic-bezier(0.23, 1, 0.32, 1);
-    transform: translateY(0);
+    font-family:  'Playfair Display', Georgia, serif;
+    font-size:    clamp(1.25rem, 2.5vw, 1.7rem);
+    font-weight:  700;
+    line-height:  1.2;
+    letter-spacing: -0.02em;
+    color:        rgba(238, 232, 255, 0.97);
+    text-shadow:  none;  /* Suppress base layout glow on cards */
+    margin-top:   0.25rem;
+    transition:   color 0.3s, text-shadow 0.3s;
   }
-
-  /* Title rises slightly on hover — z-axis depth illusion within the card */
   .article-card:hover .card-title {
-    color: rgba(240, 234, 224, 1.0);
-    transform: translateY(-3px);
+    color:       #fff;
+    text-shadow: 0 0 30px var(--card-glow), 0 0 60px var(--card-glow);
   }
 
-  /* Excerpt — 2-line clamp */
+  /* ── Excerpt ─────────────────────────────────────────────────────── */
   .card-excerpt {
     font-family: 'EB Garamond', Georgia, serif;
-    font-size: clamp(0.9rem, 1.2vw, 1.05rem);
-    line-height: 1.65;
-    color: rgba(155, 148, 138, 0.62);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
+    font-size:   clamp(0.95rem, 1.5vw, 1.05rem);
+    line-height: 1.7;
+    color:       rgba(200, 192, 220, 0.72);
+    display:     -webkit-box;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    transition: color 0.35s ease;
+    overflow:    hidden;
+    margin:      0;
   }
-  .article-card:hover .card-excerpt { color: rgba(175, 168, 158, 0.75); }
 
-  /* CTA arrow — muted at rest, gold on hover */
-  .card-cta {
-    font-family: 'EB Garamond', Georgia, serif;
-    font-size: 0.67rem;
-    letter-spacing: 0.22em;
+  /* ── Tags ────────────────────────────────────────────────────────── */
+  .card-tags {
+    display:   flex;
+    flex-wrap: wrap;
+    gap:       0.4rem;
+    margin-top: 0.25rem;
+  }
+  .card-tag {
+    font-family:   'EB Garamond', Georgia, serif;
+    font-size:     0.68rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: rgba(140, 134, 126, 0.0);   /* invisible at rest */
-    transition: color 0.35s ease;
+    color:         var(--card-tag);
+    border:        1px solid var(--card-border);
+    border-radius: 4px;
+    padding:       0.2em 0.55em;
+    opacity:       0.75;
+    transition:    opacity 0.2s, background 0.2s;
   }
-  .article-card:hover .card-cta { color: rgba(185, 158, 110, 0.72); }
-
-  /* ── Mobile: edge-to-edge minimalist list ────────────────────────────────── */
-  @media (max-width: 767px) {
-    .article-card {
-      padding: 1.4rem 1.5rem;
-      border-bottom: 1px solid rgba(185, 158, 110, 0.16);
-      border-radius: 0;
-      /* No transforms on mobile — performance + clarity */
-      transform: none !important;
-      will-change: auto;
-    }
-
-    .article-card::before,
-    .article-card::after { display: none; }
-
-    .card-title {
-      font-size: clamp(1.1rem, 4.8vw, 1.35rem);
-      letter-spacing: 0.04em;
-      transform: none !important;
-    }
-
-    .card-excerpt {
-      -webkit-line-clamp: 1;
-      font-size: 0.88rem;
-    }
-
-    .card-cta { display: none; }
+  .article-card:hover .card-tag {
+    opacity:    1.0;
+    background: var(--card-glow);
   }
 
-  /* ── Reduced motion ───────────────────────────────────────────────────────── */
-  @media (prefers-reduced-motion: reduce) {
-    .article-card,
-    .article-card::before,
-    .article-card::after,
-    .card-title,
-    .card-date,
-    .card-excerpt,
-    .card-cta {
-      transition: none;
-    }
-    .article-card:hover { transform: none; }
-    .article-card:hover .card-title { transform: none; }
+  /* ── CTA row ─────────────────────────────────────────────────────── */
+  .card-cta {
+    display:     flex;
+    align-items: center;
+    gap:         0.5rem;
+    margin-top:  0.5rem;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size:   0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color:       var(--card-tag);
+    opacity:     0;
+    transform:   translateY(4px);
+    transition:  opacity 0.35s ease, transform 0.35s ease;
+  }
+  .article-card:hover .card-cta {
+    opacity:   0.8;
+    transform: translateY(0);
+  }
+  .cta-arrow {
+    transition: transform 0.3s ease;
+  }
+  .article-card:hover .cta-arrow {
+    transform: translateX(4px);
+  }
+
+  /* ── Corner glyph ───────────────────────────────────────────────── */
+  .card-corner {
+    position:    absolute;
+    bottom:      1rem;
+    right:       1.2rem;
+    font-size:   0.7rem;
+    color:       var(--card-tag);
+    opacity:     0.2;
+    transition:  opacity 0.3s, transform 0.6s ease;
+    transform:   rotate(0deg);
+    user-select: none;
+  }
+  .article-card:hover .card-corner {
+    opacity:   0.55;
+    transform: rotate(180deg);
   }
 </style>

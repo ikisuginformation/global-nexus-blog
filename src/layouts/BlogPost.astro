@@ -1,609 +1,398 @@
 ---
-// src/layouts/BlogPost.astro
-// Individual article layout.
-//
-// Design principles (enforced, not decorative):
-//   • Zero text-shadow on body copy. Zero. None.
-//   • Headings: colour contrast only, no glow tricks.
-//   • Reading column: 680px max, generous margin, line-height 1.85.
-//   • Background: transparent → WebGL shows through. Glass panel only
-//     on the narrow prose column, not on the whole viewport.
-//   • Bionic Reading on <p> only. Headings are clean Playfair.
+// BlogPost.astro — Affiliate-optimized article layout
+// Key conversion elements:
+//   1. Sticky "Tool Verdict" sidebar (appears after 30% scroll)
+//   2. Inline affiliate CTAs with /go/ redirect tracking
+//   3. Comparison table component slot
+//   4. Reading time + impossible counter (Measurement 3)
+//   5. Related tools section (highest conversion placement)
 
-import QuantumCanvas from '../components/QuantumCanvas.astro';
+import BaseLayout from './BaseLayout.astro';
 
 export interface Props {
-  title:       string;
-  description?: string;
-  date?:        string;
-  readTime?:    string;
-  tags?:        string[];
+  title: string;
+  description: string;
+  pubDate: string;
+  updatedDate?: string;
+  category: string;
+  categorySlug: string;
+  articleId: string;       // GNX-001 etc
+  readingMinutes: number;
+  heroImage?: string;
+  verdict?: {              // Tool verdict box (affiliate conversion)
+    tool: string;
+    verdict: "recommended" | "conditional" | "avoid";
+    summary: string;
+    pros: string[];
+    cons: string[];
+    price: string;
+    affiliateSlug: string; // maps to /go/{slug}
+    affiliateLabel: string;
+  };
+  relatedTools?: Array<{
+    name: string;
+    slug: string;          // /go/{slug}
+    label: string;
+    category: string;
+  }>;
+  tags?: string[];
+  affiliateDisclosure?: boolean;
 }
 
 const {
-  title,
-  description = '',
-  date,
-  readTime,
-  tags = [],
+  title, description, pubDate, updatedDate,
+  category, categorySlug, articleId,
+  readingMinutes, heroImage,
+  verdict, relatedTools = [], tags = [],
+  affiliateDisclosure = false,
 } = Astro.props;
 
-let dateStr = '';
-if (date) {
-  try {
-    dateStr = new Intl.DateTimeFormat('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    }).format(new Date(date));
-  } catch { dateStr = date; }
-}
+const formattedDate = new Date(pubDate).toLocaleDateString('en-US', {
+  year: 'numeric', month: 'long', day: 'numeric'
+});
+const formattedUpdated = updatedDate
+  ? new Date(updatedDate).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})
+  : null;
+
+// Litho icon SVG for category
+const lithoIcons: Record<string, string> = {
+  'vpn-privacy': `<circle cx="9" cy="9" r="1.4" fill="#8A4E28" opacity=".50"/><circle cx="16" cy="9" r="1.4" fill="#8A4E28" opacity=".50"/><circle cx="23" cy="9" r="1.4" fill="#8A4E28" opacity=".50"/><circle cx="12" cy="15" r="1.4" fill="#8A4E28" opacity=".44"/><circle cx="19" cy="15" r="1.4" fill="#8A4E28" opacity=".44"/><circle cx="26" cy="15" r="1.4" fill="#8A4E28" opacity=".44"/><circle cx="9" cy="21" r="1.4" fill="#8A4E28" opacity=".36"/><circle cx="16" cy="21" r="1.4" fill="#8A4E28" opacity=".36"/><circle cx="23" cy="21" r="1.4" fill="#8A4E28" opacity=".36"/>`,
+  'b2b-saas': `<line x1="8" y1="4" x2="8" y2="11" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="4.5" y1="7.5" x2="11.5" y2="7.5" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="22" y1="4" x2="22" y2="11" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="18.5" y1="7.5" x2="25.5" y2="7.5" stroke="#7A9260" stroke-width=".9" opacity=".55"/><line x1="15" y1="14" x2="15" y2="21" stroke="#7A9260" stroke-width=".9" opacity=".48"/><line x1="11.5" y1="17.5" x2="18.5" y2="17.5" stroke="#7A9260" stroke-width=".9" opacity=".48"/>`,
+  'blockchain': `<rect x="2" y="4" width="11" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".52"/><rect x="15" y="4" width="17" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".52"/><rect x="2" y="11" width="7" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".45"/><rect x="11" y="11" width="21" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".45"/><rect x="2" y="18" width="14" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".37"/><rect x="18" y="18" width="14" height="5" stroke="#5A6858" stroke-width=".8" fill="none" opacity=".37"/>`,
+  'strategy': `<circle cx="17" cy="17" r="11" stroke="#5A6858" stroke-width=".9"/><circle cx="17" cy="17" r="1.8" stroke="#5A6858" stroke-width=".8"/><path d="M17 7.5 L18.4 14.5 L17 17 L15.6 14.5 Z" fill="rgba(90,104,88,.55)" stroke="#5A6858" stroke-width=".6"/>`,
+  'behavior': `<path d="M2 8 Q9 5.5 17 8 Q25 10.5 32 8" stroke="#A88820" stroke-width=".9" fill="none" opacity=".55"/><path d="M2 15 Q9 12.5 17 15 Q25 17.5 32 15" stroke="#A88820" stroke-width=".9" fill="none" opacity=".48"/><path d="M2 22 Q9 19.5 17 22 Q25 24.5 32 22" stroke="#A88820" stroke-width=".9" fill="none" opacity=".38"/>`,
+  'critique': `<rect x="3" y="4" width="28" height="26" fill="none" stroke="#6A5C48" stroke-width=".7" opacity=".28"/><rect x="4" y="5" width="26" height="4" fill="#6A5C48" opacity=".20"/><rect x="4" y="11" width="26" height="4" fill="#6A5C48" opacity=".17"/><rect x="4" y="17" width="26" height="4" fill="#6A5C48" opacity=".14"/><line x1="17" y1="4" x2="16.5" y2="30" stroke="#6A5C48" stroke-width=".5" stroke-dasharray="2,3" opacity=".22"/>`,
+};
+
+const lithoSvg = lithoIcons[categorySlug] || lithoIcons['critique'];
+
+const verdictColors = {
+  recommended: 'var(--moss)',
+  conditional: 'var(--ochre)',
+  avoid: 'var(--rust)',
+};
+const verdictLabels = {
+  recommended: '✓ Recommended',
+  conditional: '◎ Conditional',
+  avoid: '✗ Avoid',
+};
 ---
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content={description} />
-  <title>{title}</title>
+<BaseLayout
+  {title} {description}
+  canonicalURL={Astro.url.href}
+  {heroImage}
+  article={true}
+  {pubDate} {category}
+  {affiliateDisclosure}
+>
+<article class="art-page" itemscope itemtype="https://schema.org/Article">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
-    rel="stylesheet"
-  />
-</head>
+  <!-- BREADCRUMB -->
+  <div class="art-wrap art-crumb-wrap">
+    <nav class="art-crumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span aria-hidden="true">/</span>
+      <a href={`/category/${categorySlug}`}>{category}</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{articleId}</span>
+    </nav>
+  </div>
 
-<body>
-  <!-- WebGL ground — fixed behind all content -->
-  <QuantumCanvas />
-
-  <!-- Full-height dark scrim so prose is always readable -->
-  <!-- Not a white background. A dark one. -->
-  <div class="page-scrim" aria-hidden="true"></div>
-
-  <!-- Back navigation — minimal, top-left, never in the way -->
-  <nav class="post-nav" aria-label="Site navigation">
-    <a href="/" class="back-link">
-      <span class="back-arrow" aria-hidden="true">←</span>
-      <span>All writing</span>
-    </a>
-  </nav>
-
-  <!-- Article wrapper — the reading column -->
-  <article class="post-shell">
-
-    <!-- Glass panel contains the prose -->
-    <div class="post-glass">
-
-      <!-- Header block -->
-      <header class="post-header">
-
-        {tags.length > 0 && (
-          <div class="post-tags" role="list">
-            {tags.map(tag => (
-              <span class="post-tag" role="listitem">{tag}</span>
-            ))}
-          </div>
-        )}
-
-        <h1 class="post-title">{title}</h1>
-
-        {description && (
-          <p class="post-description">{description}</p>
-        )}
-
-        {(dateStr || readTime) && (
-          <div class="post-meta">
-            {dateStr && <time datetime={date}>{dateStr}</time>}
-            {dateStr && readTime && <span class="meta-sep" aria-hidden="true">·</span>}
-            {readTime && <span>{readTime}</span>}
-          </div>
-        )}
-
-        <!-- Rule: one thin line, not a glowing gradient -->
-        <div class="post-rule" aria-hidden="true"></div>
-
-      </header>
-
-      <!-- Prose body — slot receives markdown/HTML -->
-      <div class="post-body">
-        <slot />
-      </div>
-
-      <!-- Footer: prev/next or back -->
-      <footer class="post-footer">
-        <a href="/" class="footer-back">← Return to all writing</a>
-      </footer>
-
+  <!-- HERO -->
+  <header class="art-header art-wrap">
+    <!-- Litho category emblem -->
+    <div class="art-emblem" aria-hidden="true">
+      <svg width="38" height="38" viewBox="0 0 34 34" fill="none" set:html={lithoSvg}/>
     </div>
-  </article>
 
-  <!-- Grain overlay — tactile -->
-  <div class="grain-overlay" aria-hidden="true"></div>
+    <div class="art-meta-row">
+      <span class="art-cat">{category}</span>
+      <span class="art-sep" aria-hidden="true">·</span>
+      <span class="art-id">{articleId}</span>
+    </div>
 
-</body>
-</html>
+    <h1 class="art-h1" itemprop="headline">{title}</h1>
+    <div class="art-rule"></div>
+    <p class="art-desc" itemprop="description">{description}</p>
 
-<style is:global>
-  /* ── Resets & tokens ─────────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <div class="art-byline">
+      <div class="bl-sphere" aria-hidden="true"></div>
+      <div class="bl-text">
+        <span class="bl-name" itemprop="author">Global Nexus Editorial</span>
+        <span class="bl-role">AI-researched · Editorially verified</span>
+      </div>
+      <div class="bl-right">
+        <time class="bl-date" datetime={pubDate} itemprop="datePublished">{formattedDate}</time>
+        {formattedUpdated && (
+          <span class="bl-updated">Updated <time datetime={updatedDate}>{formattedUpdated}</time></span>
+        )}
+        <!-- IMPOSSIBLE MEASUREMENT 3: reading time occasionally increases -->
+        <span id="reading-remain" aria-live="polite">{readingMinutes}.0 min remaining</span>
+      </div>
+    </div>
+  </header>
 
-  :root {
-    /* Abyss palette — matches BaseLayout exactly */
-    --c-void:       #030303;
-    --c-scrim:      rgba(3, 2, 5, 0.78);
-    --c-glass:      rgba(5, 4, 9, 0.72);
-    --c-glass-edge: rgba(255, 255, 255, 0.055);
+  <!-- MAIN CONTENT AREA WITH OPTIONAL STICKY SIDEBAR -->
+  <div class="art-layout art-wrap">
 
-    /* Typography colours — no glow, pure contrast */
-    --c-heading:    rgba(230, 224, 215, 0.96);   /* warm off-white */
-    --c-body:       rgba(195, 188, 178, 0.82);   /* warm grey */
-    --c-muted:      rgba(140, 134, 126, 0.60);   /* secondary */
-    --c-accent:     rgba(185, 158, 110, 0.80);   /* antique gold — for links */
-    --c-rule:       rgba(255, 255, 255, 0.07);   /* barely visible */
+    <!-- ARTICLE BODY -->
+    <div class="art-body" itemprop="articleBody">
+      <slot />
+    </div>
 
-    /* Type */
-    --f-display:   'Playfair Display', Georgia, serif;
-    --f-body:      'EB Garamond', Georgia, serif;
-    --f-mono:      'Courier New', monospace;
+    <!-- STICKY VERDICT SIDEBAR (shows when verdict prop provided) -->
+    {verdict && (
+      <aside class="verdict-sidebar" aria-label="Tool verdict">
+        <div class="verdict-card" data-verdict={verdict.verdict}>
+          <div class="verdict-header">
+            <span class="verdict-label" style={`color:${verdictColors[verdict.verdict]}`}>
+              {verdictLabels[verdict.verdict]}
+            </span>
+            <span class="verdict-tool">{verdict.tool}</span>
+          </div>
+          <div class="verdict-price">{verdict.price}</div>
+          <p class="verdict-summary">{verdict.summary}</p>
+          <div class="verdict-pros-cons">
+            <div class="verdict-col">
+              <div class="vc-label">Strengths</div>
+              <ul class="vc-list">
+                {verdict.pros.map(p => <li>{p}</li>)}
+              </ul>
+            </div>
+            <div class="verdict-col">
+              <div class="vc-label">Weaknesses</div>
+              <ul class="vc-list">
+                {verdict.cons.map(c => <li>{c}</li>)}
+              </ul>
+            </div>
+          </div>
+          <a
+            href={`/go/${verdict.affiliateSlug}`}
+            class="verdict-cta"
+            target="_blank" rel="noopener"
+            aria-label={`${verdict.affiliateLabel} — affiliate link`}
+          >
+            <span>{verdict.affiliateLabel}</span>
+            <span class="verdict-cta-arr">→</span>
+          </a>
+          <span class="verdict-disc">Affiliate link. Commission earned at no extra cost to you.</span>
+        </div>
+      </aside>
+    )}
+  </div>
 
-    /* Rhythm */
-    --col-width:   680px;
-    --col-pad:     clamp(1.5rem, 5vw, 4rem);
-  }
+  <!-- RELATED TOOLS (high conversion placement — bottom of article) -->
+  {relatedTools.length > 0 && (
+    <section class="related-tools art-wrap" aria-label="Recommended tools">
+      <div class="rt-header">
+        <span class="rt-label">Tools referenced in this analysis</span>
+        <a href="/tools" class="rt-all">See all vetted tools →</a>
+      </div>
+      <div class="rt-grid">
+        {relatedTools.map(tool => (
+          <a
+            href={`/go/${tool.slug}`}
+            class="rt-card"
+            target="_blank" rel="noopener"
+            aria-label={`${tool.name} — ${tool.label} (affiliate link)`}
+          >
+            <span class="rt-cat">{tool.category}</span>
+            <span class="rt-name">{tool.name}</span>
+            <span class="rt-label-btn">{tool.label} →</span>
+          </a>
+        ))}
+      </div>
+      <p class="rt-disc">These are affiliate links. We earn a commission on purchases. <a href="/affiliate-disclosure">Full disclosure →</a></p>
+    </section>
+  )}
 
-  html {
-    background: var(--c-void);
-    color-scheme: dark;
-    scroll-behavior: smooth;
-  }
+  <!-- RELATED ARTICLES -->
+  <div class="art-wrap">
+    <slot name="related" />
+  </div>
 
-  body {
-    background: transparent;
-    font-family: var(--f-body);
-    font-size: clamp(1.05rem, 1.6vw, 1.175rem);
-    line-height: 1.85;
-    color: var(--c-body);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  <!-- NEWSLETTER CTA -->
+  <section class="art-newsletter art-wrap" aria-label="Newsletter signup">
+    <div class="nl-inner">
+      <div class="nl-text">
+        <span class="nl-eyebrow">Free Newsletter</span>
+        <h2 class="nl-h2">One analysis. Every week. No filler.</h2>
+        <p class="nl-desc">We send one piece of independent analysis each week. No ads. No sponsored content. Unsubscribe with one click.</p>
+      </div>
+      <form class="nl-form" action="/api/subscribe" method="POST" aria-label="Subscribe to newsletter">
+        <label for="nl-email" class="sr-only">Email address</label>
+        <input
+          type="email" id="nl-email" name="email"
+          placeholder="your@email.com"
+          required autocomplete="email"
+          class="nl-input"
+          aria-required="true"
+        />
+        <button type="submit" class="nl-btn">Subscribe →</button>
+      </form>
+    </div>
+  </section>
 
-  /* ── Full-page dark scrim ─────────────────────────────────────────────────── */
-  /* This is NOT a white background. It darkens the WebGL so prose is legible. */
-  .page-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      rgba(3, 2, 5, 0.55) 0%,
-      rgba(3, 2, 5, 0.68) 40%,
-      rgba(3, 2, 5, 0.72) 100%
-    );
-  }
+</article>
+</BaseLayout>
 
-  /* ── Grain ───────────────────────────────────────────────────────────────── */
-  .grain-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    pointer-events: none;
-    opacity: 0.025;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 256px;
-  }
+<style>
+/* Article page layout */
+.art-page{padding-top:var(--nav-h);background:var(--paper)}
+.art-wrap{max-width:900px;margin:0 auto;padding:0 var(--s6)}
+.art-crumb-wrap{padding-top:var(--s5);padding-bottom:0}
 
-  /* ── Back nav ────────────────────────────────────────────────────────────── */
-  .post-nav {
-    position: fixed;
-    top: 2rem;
-    left: clamp(1rem, 4vw, 3rem);
-    z-index: 20;
-  }
+/* Breadcrumb */
+.art-crumb{display:flex;align-items:center;gap:var(--s2);font-family:var(--mono);font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;color:var(--pale)}
+.art-crumb a{color:inherit;text-decoration:none;transition:color .2s}.art-crumb a:hover{color:var(--umber)}
+.art-crumb span[aria-hidden]{opacity:.4}
 
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4em;
-    font-family: var(--f-body);
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--c-muted);
-    text-decoration: none;
-    transition: color 0.25s;
-  }
-  .back-link:hover { color: var(--c-heading); }
+/* Header */
+.art-header{padding-top:var(--s5);padding-bottom:var(--s5)}
+.art-emblem{margin-bottom:var(--s4);opacity:.55}
+.art-meta-row{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4)}
+.art-cat{font-family:var(--mono);font-size:.44rem;letter-spacing:.22em;text-transform:uppercase;color:var(--moss)}
+.art-sep{color:var(--pale);opacity:.5}
+.art-id{font-family:var(--mono);font-size:.40rem;letter-spacing:.14em;color:var(--pale)}
+.art-h1{font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(2.2rem,5vw,4.4rem);line-height:1.05;letter-spacing:-.015em;color:var(--deep);margin-bottom:var(--s3)}
+.art-rule{width:var(--s5);height:1px;background:var(--moss);margin-bottom:var(--s4)}
+.art-desc{font-family:var(--body);font-size:1.10rem;line-height:1.618;color:var(--umber);max-width:54ch;margin-bottom:var(--s4)}
 
-  .back-arrow {
-    font-size: 0.9em;
-    transition: transform 0.25s;
-  }
-  .back-link:hover .back-arrow { transform: translateX(-3px); }
+/* Byline */
+.art-byline{display:flex;align-items:center;gap:var(--s3);padding:var(--s2) 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.bl-sphere{width:20px;height:20px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 34% 30%,rgba(80,104,69,.22),var(--deep) 55%);border:1px solid rgba(28,23,16,.14);box-shadow:0 0 7px rgba(80,104,69,.14);position:relative}
+.bl-sphere::after{content:'';position:absolute;top:14%;left:18%;width:36%;height:24%;background:rgba(255,255,255,.14);border-radius:50%;filter:blur(1px);transform:rotate(-28deg)}
+.bl-text{display:flex;flex-direction:column;gap:2px}
+.bl-name{font-family:var(--body);font-size:.92rem;color:var(--umber)}
+.bl-role{font-family:var(--mono);font-size:.36rem;letter-spacing:.14em;text-transform:uppercase;color:var(--pale)}
+.bl-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.bl-date{font-family:var(--mono);font-size:.40rem;letter-spacing:.12em;text-transform:uppercase;color:var(--pale)}
+.bl-updated{font-family:var(--mono);font-size:.36rem;letter-spacing:.10em;text-transform:uppercase;color:var(--pale);opacity:.7}
+#reading-remain{font-family:var(--mono);font-size:.38rem;letter-spacing:.10em;color:var(--silt);transition:color .8s}
+#reading-remain.jumped{color:var(--rust)}
 
-  /* ── Article shell ───────────────────────────────────────────────────────── */
-  .post-shell {
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    padding: clamp(5rem, 10vh, 8rem) var(--col-pad) clamp(4rem, 8vh, 6rem);
-  }
+/* Main layout: article + sidebar */
+.art-layout{display:grid;grid-template-columns:1fr 280px;gap:var(--s6);padding-top:var(--s5);padding-bottom:var(--s6);align-items:start}
 
-  /* ── Glass reading column ────────────────────────────────────────────────── */
-  .post-glass {
-    width: 100%;
-    max-width: var(--col-width);
+/* Article body */
+.art-body{min-width:0}
+.art-body :global(p:first-of-type){font-size:1.10rem;line-height:1.618;color:var(--deep);margin-bottom:var(--s4);font-weight:500}
+.art-body :global(p){line-height:1.618;color:var(--oak);margin-bottom:var(--s3);font-size:1.02rem}
+.art-body :global(strong){color:var(--deep);font-weight:500}
+.art-body :global(h2){font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.1;color:var(--deep);margin:var(--s6) 0 var(--s3)}
+.art-body :global(h3){font-family:var(--serif);font-style:italic;font-weight:600;font-size:1.3rem;line-height:1.2;color:var(--deep);margin:var(--s5) 0 var(--s2)}
+.art-body :global(ul){margin:var(--s3) 0 var(--s3) var(--s4);display:flex;flex-direction:column;gap:var(--s2)}
+.art-body :global(ul li){font-family:var(--body);line-height:1.618;color:var(--oak);font-size:1.02rem}
+.art-body :global(a){color:var(--moss);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+.art-body :global(a:hover){color:var(--fern)}
 
-    /* Glass: dark, subtle, not screaming */
-    background: var(--c-glass);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border: 1px solid var(--c-glass-edge);
-    border-radius: 4px;           /* minimal radius — architectural, not soft */
-    box-shadow:
-      0 2px 4px rgba(0,0,0,0.4),
-      0 16px 64px rgba(0,0,0,0.55),
-      0 48px 128px rgba(0,0,0,0.35);
+/* Pull quote */
+.art-body :global(.pull){margin:var(--s5) 0;padding:var(--s3) var(--s5);border-left:2px solid var(--moss);background:var(--sheet);font-family:var(--serif);font-style:italic;font-size:1.16rem;line-height:1.618;color:var(--oak)}
 
-    padding: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 5vw, 4rem);
-    align-self: flex-start;
-  }
+/* Comparison table */
+.art-body :global(.compare-table){width:100%;border-collapse:collapse;margin:var(--s5) 0;font-family:var(--body);font-size:.94rem}
+.art-body :global(.compare-table th){font-family:var(--mono);font-size:.38rem;letter-spacing:.16em;text-transform:uppercase;color:var(--pale);padding:var(--s2) var(--s3);border-bottom:2px solid var(--rule);text-align:left;background:var(--sheet)}
+.art-body :global(.compare-table td){padding:var(--s3);border-bottom:1px solid var(--rule-s);color:var(--oak);line-height:1.5}
+.art-body :global(.compare-table tr:hover td){background:var(--sheet)}
+.art-body :global(.compare-table .recommended-row td){background:rgba(80,104,69,.04)}
 
-  /* ── Post header ─────────────────────────────────────────────────────────── */
-  .post-header {
-    margin-bottom: 3rem;
-  }
+/* Inline affiliate CTA box */
+.art-body :global(.aff-cta){display:flex;align-items:center;gap:var(--s4);padding:var(--s4);border:1px solid rgba(80,104,69,.25);background:rgba(80,104,69,.04);margin:var(--s5) 0}
+.art-body :global(.aff-cta-text){flex:1;font-family:var(--body);font-size:.96rem;line-height:1.618;color:var(--umber)}
+.art-body :global(.aff-cta-btn){flex-shrink:0;font-family:var(--mono);font-size:.46rem;letter-spacing:.16em;text-transform:uppercase;color:var(--paper);background:var(--moss);padding:var(--s2) var(--s4);text-decoration:none;white-space:nowrap;transition:background .2s}
+.art-body :global(.aff-cta-btn:hover){background:var(--fern)}
+.art-body :global(.aff-disc){font-family:var(--mono);font-size:.34rem;letter-spacing:.10em;text-transform:uppercase;color:var(--pale);display:block;margin-top:var(--s1)}
 
-  .post-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
+/* Ghost note */
+.art-body :global(.ghost-note){margin:var(--s4) 0;font-family:var(--mono);font-size:.36rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(28,23,16,.055);transition:color .8s}
+.art-body :global(.ghost-note:hover){color:var(--moss)}
 
-  .post-tag {
-    font-family: var(--f-body);
-    font-size: 0.68rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--c-accent);
-    opacity: 0.75;
-  }
+/* ── VERDICT SIDEBAR ── */
+.verdict-sidebar{position:sticky;top:calc(var(--nav-h) + var(--s4));align-self:start}
+.verdict-card{border:1px solid var(--rule);background:var(--cream);padding:var(--s4)}
+.verdict-header{display:flex;flex-direction:column;gap:var(--s1);margin-bottom:var(--s3);padding-bottom:var(--s3);border-bottom:1px solid var(--rule)}
+.verdict-label{font-family:var(--mono);font-size:.40rem;letter-spacing:.18em;text-transform:uppercase;font-weight:500}
+.verdict-tool{font-family:var(--serif);font-size:1.1rem;font-style:italic;font-weight:600;color:var(--deep)}
+.verdict-price{font-family:var(--mono);font-size:.42rem;letter-spacing:.12em;color:var(--silt);margin-bottom:var(--s2)}
+.verdict-summary{font-family:var(--body);font-size:.90rem;line-height:1.618;color:var(--umber);margin-bottom:var(--s3)}
+.verdict-pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);margin-bottom:var(--s4)}
+.verdict-col{}
+.vc-label{font-family:var(--mono);font-size:.36rem;letter-spacing:.16em;text-transform:uppercase;color:var(--pale);margin-bottom:var(--s2)}
+.vc-list{list-style:none;display:flex;flex-direction:column;gap:var(--s1)}
+.vc-list li{font-family:var(--body);font-size:.84rem;line-height:1.5;color:var(--oak);padding-left:var(--s3);position:relative}
+.vc-list li::before{content:'–';position:absolute;left:0;color:var(--pale)}
+.verdict-cta{display:flex;align-items:center;justify-content:space-between;padding:var(--s3) var(--s4);background:var(--moss);color:var(--paper);text-decoration:none;font-family:var(--mono);font-size:.46rem;letter-spacing:.16em;text-transform:uppercase;transition:background .2s;margin-bottom:var(--s2)}
+.verdict-cta:hover{background:var(--fern)}
+.verdict-cta-arr{transition:transform .2s}
+.verdict-cta:hover .verdict-cta-arr{transform:translateX(3px)}
+.verdict-disc{font-family:var(--mono);font-size:.32rem;letter-spacing:.10em;text-transform:uppercase;color:var(--pale);display:block;text-align:center}
 
-  /* Separate tags visually without boxes — cleaner */
-  .post-tag + .post-tag::before {
-    content: '/';
-    margin-right: 0.5rem;
-    opacity: 0.35;
-  }
+/* ── RELATED TOOLS ── */
+.related-tools{padding-top:var(--s6);padding-bottom:var(--s5);border-top:1px solid var(--rule)}
+.rt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s4)}
+.rt-label{font-family:var(--serif);font-size:.92rem;font-style:italic;color:var(--silt)}
+.rt-all{font-family:var(--mono);font-size:.40rem;letter-spacing:.16em;text-transform:uppercase;color:var(--moss);text-decoration:none}
+.rt-all:hover{text-decoration:underline}
+.rt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0;border:1px solid var(--rule)}
+.rt-card{text-decoration:none;padding:var(--s3) var(--s4);border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:var(--s1);transition:background .25s;background:var(--paper)}
+.rt-card:last-child{border-right:none}
+.rt-card:hover{background:var(--sheet)}
+.rt-cat{font-family:var(--mono);font-size:.36rem;letter-spacing:.16em;text-transform:uppercase;color:var(--pale)}
+.rt-name{font-family:var(--serif);font-size:.96rem;font-style:italic;font-weight:600;color:var(--deep)}
+.rt-label-btn{font-family:var(--mono);font-size:.38rem;letter-spacing:.14em;text-transform:uppercase;color:var(--moss)}
+.rt-disc{font-family:var(--mono);font-size:.34rem;letter-spacing:.10em;text-transform:uppercase;color:var(--pale);margin-top:var(--s3)}
+.rt-disc a{color:var(--moss);text-decoration:none}.rt-disc a:hover{text-decoration:underline}
 
-  .post-title {
-    font-family: var(--f-display);
-    font-size: clamp(2.2rem, 5.5vw, 3.8rem);
-    font-weight: 900;
-    font-style: italic;
-    line-height: 1.08;
-    letter-spacing: -0.025em;
-    color: var(--c-heading);
+/* ── NEWSLETTER CTA ── */
+.art-newsletter{padding:var(--s6) 0;border-top:1px solid var(--rule)}
+.nl-inner{display:flex;align-items:flex-start;gap:var(--s6);background:var(--sheet);padding:var(--s5) var(--s6);border:1px solid var(--rule)}
+.nl-text{flex:1}
+.nl-eyebrow{font-family:var(--mono);font-size:.40rem;letter-spacing:.22em;text-transform:uppercase;color:var(--moss);display:block;margin-bottom:var(--s2)}
+.nl-h2{font-family:var(--serif);font-style:italic;font-weight:600;font-size:1.6rem;line-height:1.15;color:var(--deep);margin-bottom:var(--s2)}
+.nl-desc{font-family:var(--body);font-size:.94rem;line-height:1.618;color:var(--silt)}
+.nl-form{display:flex;flex-direction:column;gap:var(--s2);min-width:240px;flex-shrink:0}
+.nl-input{font-family:var(--mono);font-size:.48rem;letter-spacing:.10em;padding:var(--s3) var(--s3);border:1.5px solid var(--rule);background:var(--paper);color:var(--deep);outline:none;transition:border-color .2s}
+.nl-input:focus{border-color:var(--moss)}
+.nl-input::placeholder{color:var(--pale)}
+.nl-btn{font-family:var(--mono);font-size:.48rem;letter-spacing:.16em;text-transform:uppercase;padding:var(--s3) var(--s4);background:var(--deep);color:var(--paper);border:none;cursor:pointer;transition:background .2s}
+.nl-btn:hover{background:var(--moss)}
 
-    /* NO text-shadow. Contrast is the only tool. */
-    text-shadow: none;
-    margin-bottom: 1.25rem;
-  }
+/* SR-only */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
 
-  .post-description {
-    font-family: var(--f-body);
-    font-size: clamp(1.1rem, 2vw, 1.3rem);
-    font-style: italic;
-    line-height: 1.6;
-    color: var(--c-muted);
-    text-shadow: none;            /* explicit: never shadow body copy */
-    margin-bottom: 1.5rem;
-  }
-
-  .post-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-family: var(--f-body);
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--c-muted);
-    opacity: 0.7;
-    margin-bottom: 2rem;
-  }
-  .meta-sep { opacity: 0.4; }
-
-  /* The rule: single pixel, nearly invisible — structure not decoration */
-  .post-rule {
-    width: 100%;
-    height: 1px;
-    background: var(--c-rule);
-  }
-
-  /* ── Prose body — typographic system ────────────────────────────────────── */
-  .post-body {
-    padding-top: 2.5rem;
-  }
-
-  /* ─ Headings ─ */
-  .post-body h2 {
-    font-family: var(--f-display);
-    font-size: clamp(1.5rem, 3vw, 2rem);
-    font-weight: 700;
-    line-height: 1.18;
-    letter-spacing: -0.02em;
-    color: var(--c-heading);
-    text-shadow: none;            /* NONE. The law. */
-    margin-top: 3.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .post-body h3 {
-    font-family: var(--f-display);
-    font-size: clamp(1.2rem, 2.2vw, 1.5rem);
-    font-weight: 700;
-    font-style: italic;
-    line-height: 1.25;
-    color: var(--c-heading);
-    text-shadow: none;
-    margin-top: 2.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .post-body h4 {
-    font-family: var(--f-body);
-    font-size: 0.72rem;
-    font-weight: 400;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--c-muted);
-    text-shadow: none;
-    margin-top: 2rem;
-    margin-bottom: 0.75rem;
-  }
-
-  /* ─ Paragraphs ─ */
-  .post-body p {
-    font-family: var(--f-body);
-    font-size: inherit;
-    line-height: 1.85;
-    color: var(--c-body);
-    text-shadow: none;            /* NONE. Everywhere. Always. */
-    margin-bottom: 1.5rem;
-    hanging-punctuation: first;
-  }
-
-  .post-body p:last-child { margin-bottom: 0; }
-
-  /* First paragraph after header: slightly larger — editorial lead-in */
-  .post-body > p:first-of-type {
-    font-size: clamp(1.1rem, 1.8vw, 1.22rem);
-    color: rgba(210, 203, 193, 0.90);
-  }
-
-  /* ─ Bionic bold spans ─ */
-  .post-body b.bionic {
-    font-weight: 700;
-    color: rgba(220, 214, 205, 0.95);
-    /* No shadow, just slightly brighter */
-  }
-
-  /* ─ Links — antique gold, no glow ─ */
-  .post-body a {
-    color: var(--c-accent);
-    text-decoration: underline;
-    text-decoration-color: rgba(185, 158, 110, 0.30);
-    text-underline-offset: 3px;
-    transition: color 0.2s, text-decoration-color 0.2s;
-  }
-  .post-body a:hover {
-    color: rgba(210, 183, 135, 0.95);
-    text-decoration-color: rgba(185, 158, 110, 0.65);
-    /* No text-shadow on hover — colour shift is enough */
-  }
-
-  /* ─ Blockquote — indented, italic, muted ─ */
-  .post-body blockquote {
-    margin: 2.5rem 0;
-    padding: 1.5rem 2rem;
-    border-left: 2px solid rgba(185, 158, 110, 0.25);
-    font-style: italic;
-    color: var(--c-muted);
-    font-size: clamp(1.05rem, 1.8vw, 1.2rem);
-  }
-  .post-body blockquote p { margin-bottom: 0; }
-  .post-body blockquote cite {
-    display: block;
-    margin-top: 0.75rem;
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    font-style: normal;
-    opacity: 0.55;
-  }
-
-  /* ─ Code — monospace, dark surface ─ */
-  .post-body code {
-    font-family: var(--f-mono);
-    font-size: 0.88em;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 3px;
-    padding: 0.15em 0.4em;
-    color: rgba(200, 193, 183, 0.90);
-  }
-
-  .post-body pre {
-    background: rgba(0,0,0,0.45);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 4px;
-    padding: 1.5rem 1.75rem;
-    overflow-x: auto;
-    margin: 2rem 0;
-  }
-  .post-body pre code {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 0.85rem;
-    line-height: 1.7;
-    color: rgba(190, 183, 173, 0.85);
-  }
-
-  /* ─ Lists ─ */
-  .post-body ul,
-  .post-body ol {
-    padding-left: 1.6rem;
-    margin-bottom: 1.5rem;
-    color: var(--c-body);
-  }
-  .post-body li { margin-bottom: 0.4rem; line-height: 1.8; }
-
-  .post-body ul li::marker {
-    color: var(--c-accent);
-    opacity: 0.5;
-  }
-  .post-body ol li::marker {
-    font-family: var(--f-body);
-    color: var(--c-muted);
-    font-size: 0.85em;
-  }
-
-  /* ─ Horizontal rule ─ */
-  .post-body hr {
-    border: none;
-    height: 1px;
-    background: var(--c-rule);
-    margin: 3rem auto;
-    width: 60%;
-  }
-
-  /* ─ Images ─ */
-  .post-body img {
-    width: 100%;
-    height: auto;
-    border-radius: 3px;
-    display: block;
-    margin: 2.5rem auto;
-    opacity: 0.92;
-  }
-  .post-body figure { margin: 2.5rem 0; }
-  .post-body figcaption {
-    text-align: center;
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--c-muted);
-    margin-top: 0.75rem;
-    opacity: 0.65;
-  }
-
-  /* ─ Tables ─ */
-  .post-body table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 2rem 0;
-    font-size: 0.92rem;
-  }
-  .post-body th {
-    font-family: var(--f-body);
-    font-size: 0.68rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--c-muted);
-    text-align: left;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  .post-body td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    color: var(--c-body);
-  }
-
-  /* ── Post footer ─────────────────────────────────────────────────────────── */
-  .post-footer {
-    margin-top: 4rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--c-rule);
-  }
-
-  .footer-back {
-    font-family: var(--f-body);
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--c-muted);
-    text-decoration: none;
-    transition: color 0.25s;
-  }
-  .footer-back:hover { color: var(--c-heading); }
-
-  /* ── Scrollbar ────────────────────────────────────────────────────────────── */
-  ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-track { background: var(--c-void); }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(185, 158, 110, 0.18);
-    border-radius: 2px;
-  }
-
-  /* ── Selection ────────────────────────────────────────────────────────────── */
-  ::selection {
-    background: rgba(185, 158, 110, 0.20);
-    color: rgba(230, 224, 215, 0.98);
-  }
-
-  /* ── Responsive ───────────────────────────────────────────────────────────── */
-  @media (max-width: 600px) {
-    .post-nav { top: 1rem; left: 1rem; }
-    .post-shell { padding-top: 4.5rem; }
-    .post-glass { border-radius: 0; border-left: none; border-right: none; }
-  }
+/* Responsive */
+@media(max-width:900px){
+  .art-layout{grid-template-columns:1fr}
+  .verdict-sidebar{position:static}
+  .art-wrap{padding:0 var(--s4)}
+  .nl-inner{flex-direction:column}
+  .nl-form{width:100%}
+}
 </style>
 
-<!-- Bionic Reading: paragraph text only, never headings -->
 <script>
-  function bionicNode(node: Text) {
-    const words = node.textContent?.split(/(\s+)/) ?? [];
-    if (words.length < 2) return;
-    const frag = document.createDocumentFragment();
-    for (const word of words) {
-      if (/^\s+$/.test(word)) {
-        frag.appendChild(document.createTextNode(word));
-      } else {
-        const cut = Math.max(1, Math.ceil(word.length * 0.52));
-        const b   = document.createElement('b');
-        b.className = 'bionic';
-        b.textContent = word.slice(0, cut);
-        frag.appendChild(b);
-        frag.appendChild(document.createTextNode(word.slice(cut)));
-      }
-    }
-    node.replaceWith(frag);
+// IMPOSSIBLE MEASUREMENT 3: reading time occasionally increases
+let baseTime = parseFloat(document.getElementById('reading-remain')?.textContent || '9');
+let offset = 0;
+let lastY = 0;
+
+window.addEventListener('scroll', () => {
+  const d = document.documentElement;
+  const pct = d.scrollTop / (d.scrollHeight - d.clientHeight);
+  const scrolledDown = d.scrollTop > lastY;
+  lastY = d.scrollTop;
+
+  const el = document.getElementById('reading-remain');
+  if (!el) return;
+
+  if (scrolledDown && Math.random() < 0.012) {
+    offset += 0.2;
+    el.classList.add('jumped');
+    setTimeout(() => el.classList.remove('jumped'), 1200);
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // Scope: only paragraphs inside .post-body
-    const body = document.querySelector('.post-body');
-    if (!body) return;
-
-    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        const p = node.parentElement?.tagName.toLowerCase();
-        return (p === 'p' || p === 'li')
-          ? NodeFilter.FILTER_ACCEPT
-          : NodeFilter.FILTER_SKIP;
-      }
-    });
-    const nodes: Text[] = [];
-    let n: Node | null;
-    while ((n = walker.nextNode())) nodes.push(n as Text);
-    nodes.forEach(bionicNode);
-  });
+  const remaining = Math.max(0.1, baseTime * (1 - pct) + offset);
+  el.textContent = remaining.toFixed(1) + ' min remaining';
+}, { passive: true });
 </script>

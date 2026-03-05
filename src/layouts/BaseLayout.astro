@@ -1,188 +1,202 @@
 ---
-// src/layouts/BaseLayout.astro
-// Index / listing layout.
-// Changes: BaseHead integrated (was missing all SEO). Duplicate font links removed.
-
-import QuantumCanvas from '../components/QuantumCanvas.astro';
-import BaseHead from '../components/BaseHead.astro';
-
 export interface Props {
-    title:        string;
-    description?: string;
-    fullBleed?:   boolean;
-    language?:    string;
+  title: string;
+  description?: string;
+  canonicalURL?: string;
+  ogImage?: string;
+  article?: boolean;
+  pubDate?: string;
+  category?: string;
+  affiliateDisclosure?: boolean;
 }
-
-const { title, description = '', fullBleed = false, language = 'en' } = Astro.props;
+const {
+  title, description="Independent analysis of technology, media, and digital markets. No advertising. No sponsored content.",
+  canonicalURL=Astro.url.href, ogImage="/og-default.png",
+  article=false, pubDate, category, affiliateDisclosure=false,
+} = Astro.props;
+const SITE="Global Nexus";
+const fullTitle = title===SITE ? title : `${title} — ${SITE}`;
 ---
-
 <!DOCTYPE html>
-<html lang={language}>
+<html lang="en">
 <head>
-    <BaseHead title={title} description={description} language={language} />
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>{fullTitle}</title>
+<meta name="description" content={description}/>
+<link rel="canonical" href={canonicalURL}/>
+<meta name="robots" content="index,follow"/>
+<meta property="og:site_name" content={SITE}/>
+<meta property="og:title" content={fullTitle}/>
+<meta property="og:description" content={description}/>
+<meta property="og:url" content={canonicalURL}/>
+<meta property="og:image" content={ogImage}/>
+<meta property="og:type" content={article?"article":"website"}/>
+{pubDate&&<meta property="article:published_time" content={pubDate}/>}
+{category&&<meta property="article:section" content={category}/>}
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content={fullTitle}/>
+<meta name="twitter:description" content={description}/>
+<meta name="twitter:image" content={ogImage}/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<link rel="alternate" type="application/rss+xml" title={SITE} href="/rss.xml"/>
+{article&&pubDate&&(
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context":"https://schema.org","@type":"Article",
+    "headline":title,"description":description,"datePublished":pubDate,
+    "image":ogImage,
+    "author":{"@type":"Organization","name":SITE},
+    "publisher":{"@type":"Organization","name":SITE,"url":"https://globalnexus.io"}
+  })}/>
+)}
 </head>
-
 <body>
-    <QuantumCanvas />
+<div id="prog" aria-hidden="true"></div>
+<div class="cur" id="cur" aria-hidden="true"></div>
+<div class="cur-ring" id="cring" aria-hidden="true"></div>
 
-    <nav id="gn-nav" class="gn-nav" aria-label="Site navigation">
-        <a href="/" class="gn-logo" aria-label="Global Nexus home">GN</a>
-        <div class="gn-actions">
-            <button class="gn-icon-btn open-search-btn" aria-label="Search">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="7.5"/><line x1="17" y1="17" x2="22.5" y2="22.5"/>
-                </svg>
-            </button>
-            <button class="gn-icon-btn" aria-label="Menu">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            </button>
-        </div>
-    </nav>
+{affiliateDisclosure&&(
+  <div class="disc-banner" role="note" aria-label="Affiliate disclosure">
+    <span class="disc-dot">◈</span>
+    This article contains affiliate links. We earn a commission at no extra cost to you.
+    <a href="/affiliate-disclosure">Full policy →</a>
+  </div>
+)}
 
-    <div class="ambient-scrim" aria-hidden="true"></div>
+<nav role="navigation" aria-label="Main navigation">
+  <a href="/" class="nav-brand">
+    <div class="sphere" aria-hidden="true"></div>
+    <span class="nav-wordmark">Global Nexus</span>
+  </a>
+  <div class="nav-instruments" aria-hidden="true">
+    <div class="nav-instr"><span id="specimen-count">—</span><span class="instr-label">specimens</span></div>
+    <span class="nav-sep">·</span>
+    <div class="nav-instr"><span id="nav-clock">——:——:——</span><span class="instr-label">jst</span></div>
+  </div>
+  <div class="nav-links">
+    <a href="/archive" class="nav-link">Archive</a>
+    <a href="/tools" class="nav-link">Tools</a>
+    <a href="/about" class="nav-link">About</a>
+    <a href="/newsletter" class="nav-link nav-cta">Free Newsletter</a>
+  </div>
+</nav>
 
-    <main class:list={['site-main', { 'site-main--full': fullBleed }]}>
-        <slot />
-    </main>
+<main id="main-content"><slot/></main>
 
-    <div class="grain-overlay" aria-hidden="true"></div>
+<footer>
+  <div class="footer-inner">
+    <div class="footer-col footer-col--wide">
+      <div class="footer-brand">
+        <div class="sphere sphere--sm" aria-hidden="true"></div>
+        <span class="footer-wordmark">Global Nexus</span>
+      </div>
+      <p class="footer-desc">Independent analysis of technology, media, and digital markets. No advertisers. No sponsors. No conflicts of interest.</p>
+      <div class="footer-aff-note">
+        <strong>Affiliate disclosure:</strong> Some articles contain affiliate links to tools we've independently analyzed. We earn a commission on purchases. This never influences our conclusions.
+        <a href="/affiliate-disclosure">Read full policy →</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <div class="footer-label">Categories</div>
+      <nav aria-label="Category navigation">
+        <a href="/category/vpn-privacy" class="footer-link">VPN &amp; Privacy</a>
+        <a href="/category/b2b-saas" class="footer-link">B2B · SaaS</a>
+        <a href="/category/blockchain" class="footer-link">Blockchain</a>
+        <a href="/category/behavior" class="footer-link">Behavior</a>
+        <a href="/category/strategy" class="footer-link">Strategy</a>
+        <a href="/category/critique" class="footer-link">Critique</a>
+      </nav>
+    </div>
+    <div class="footer-col">
+      <div class="footer-label">Resources</div>
+      <nav aria-label="Resources navigation">
+        <a href="/tools" class="footer-link">Recommended Tools</a>
+        <a href="/newsletter" class="footer-link">Newsletter</a>
+        <a href="/archive" class="footer-link">Full Archive</a>
+        <a href="/rss.xml" class="footer-link">RSS Feed</a>
+        <a href="/affiliate-disclosure" class="footer-link">Affiliate Disclosure</a>
+        <a href="/about" class="footer-link">About</a>
+      </nav>
+    </div>
+  </div>
+  <div class="footer-base">
+    <span class="footer-copy">© {new Date().getFullYear()} Global Nexus</span>
+    <span class="footer-tag">Independent. Unsponsored. Precise.</span>
+  </div>
+</footer>
 </body>
-</html>
 
 <style is:global>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-        --c-void:        #030303;
-        --c-abyss:       #060409;
-        --c-glass-bg:    rgba(5, 4, 9, 0.68);
-        --c-glass-hover: rgba(7, 5, 12, 0.76);
-        --c-glass-card:  rgba(5, 4, 9, 0.58);
-        --c-glass-edge:  rgba(255, 255, 255, 0.055);
-        --c-heading:     rgba(230, 224, 215, 0.96);
-        --c-body:        rgba(195, 188, 178, 0.82);
-        --c-muted:       rgba(140, 134, 126, 0.60);
-        --c-accent:      rgba(185, 158, 110, 0.80);
-        --glass-blur:    blur(16px) saturate(140%);
-        --f-display:     'Playfair Display', Georgia, serif;
-        --f-body:        'EB Garamond', Georgia, serif;
-        --space-xs: 0.5rem; --space-s: 1rem; --space-m: 2rem;
-        --space-l: 4rem;    --space-xl: 8rem;
-    }
-
-    html { background: var(--c-void); color-scheme: dark; scroll-behavior: smooth; }
-    body {
-        background: transparent; font-family: var(--f-body);
-        font-size: clamp(1.05rem, 1.5vw, 1.2rem); line-height: 1.78;
-        color: var(--c-body); min-height: 100vh; overflow-x: hidden;
-    }
-
-    .ambient-scrim {
-        position: fixed; inset: 0; z-index: 0; pointer-events: none;
-        background:
-            radial-gradient(ellipse 100% 60% at 50% 100%, rgba(3,2,5,0.75) 0%, transparent 70%),
-            linear-gradient(180deg, rgba(3,2,5,0.25) 0%, rgba(3,2,5,0.50) 100%);
-    }
-
-    .grain-overlay {
-        position: fixed; inset: 0; z-index: 9999; pointer-events: none;
-        opacity: 0.025;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        background-size: 256px;
-    }
-
-    .site-main {
-        position: relative; z-index: 1; max-width: 1200px;
-        margin: 0 auto; padding: var(--space-l) var(--space-m);
-    }
-    .site-main--full { max-width: none; padding: 0; }
-
-    .gn-nav {
-        --nav-reveal: 0;
-        position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 1.4rem 2.5rem; pointer-events: none;
-    }
-    .gn-logo {
-        font-family: var(--f-display); font-size: 0.80rem; font-weight: 900;
-        letter-spacing: 0.40em; text-transform: uppercase;
-        color: var(--c-heading); text-decoration: none;
-        opacity: calc(0.20 + var(--nav-reveal) * 0.72);
-        transition: opacity 0.9s cubic-bezier(0.4,0,0.2,1);
-        pointer-events: auto;
-    }
-    .gn-actions {
-        display: flex; gap: 1.25rem; align-items: center;
-        opacity: calc(0.20 + var(--nav-reveal) * 0.72);
-        transition: opacity 0.9s cubic-bezier(0.4,0,0.2,1);
-        pointer-events: auto;
-    }
-    .gn-icon-btn {
-        background: none; border: none; padding: 0.35rem; cursor: pointer;
-        color: var(--c-heading); display: flex; align-items: center;
-        justify-content: center; transition: color 0.25s;
-    }
-    .gn-icon-btn:hover { color: var(--c-accent); }
-
-    h1, h2, h3, h4 {
-        font-family: var(--f-display); font-weight: 700; line-height: 1.1;
-        letter-spacing: -0.02em; color: var(--c-heading); text-shadow: none;
-    }
-    h1 { font-size: clamp(3rem,8vw,7rem); font-weight: 900; font-style: italic; letter-spacing: 0.06em; }
-    h2 { font-size: clamp(1.8rem,4.5vw,3.2rem); }
-    h3 { font-size: clamp(1.25rem,2.5vw,2rem); font-style: italic; }
-    h4 { font-family: var(--f-body); font-size: 0.72rem; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--c-muted); }
-    p { font-family: var(--f-body); text-shadow: none; }
-    a { color: var(--c-accent); text-decoration: none; transition: color 0.2s; }
-    a:hover { color: rgba(215,188,140,0.95); }
-
-    .glass-panel {
-        background: var(--c-glass-bg); backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
-        border: 1px solid var(--c-glass-edge); border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.4), 0 16px 48px rgba(0,0,0,0.55);
-        transition: background 0.35s, box-shadow 0.35s, border-color 0.35s;
-    }
-    .glass-panel:hover {
-        background: var(--c-glass-hover); border-color: rgba(185,158,110,0.12);
-    }
-
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-track { background: var(--c-abyss); }
-    ::-webkit-scrollbar-thumb { background: rgba(185,158,110,0.18); border-radius: 2px; }
-    ::selection { background: rgba(185,158,110,0.20); color: rgba(230,224,215,0.98); }
-
-    @media (max-width: 767px) {
-        .gn-nav {
-            top: auto; bottom: 0; padding: 0.65rem 2rem;
-            background: rgba(3,2,5,0.92);
-            backdrop-filter: blur(20px) saturate(130%);
-            -webkit-backdrop-filter: blur(20px) saturate(130%);
-            border-top: 1px solid rgba(185,158,110,0.52);
-            pointer-events: auto; --nav-reveal: 1;
-        }
-        .gn-logo { display: none; }
-        .gn-actions { width: 100%; justify-content: center; gap: 3.5rem; opacity: 1; }
-        .gn-icon-btn { padding: 0.5rem; }
-    }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#F2EDE3;--sheet:#ECE7DC;--laid:#E5DFD3;
+  --deep:#1C1710;--oak:#3C3022;--umber:#6A5C48;--silt:#A09080;--pale:#C8BBAA;
+  --moss:#506845;--rust:#8A4E28;--ochre:#A88820;--slate:#5A6858;--lichen:#7A9260;
+  --rule:rgba(28,23,16,.08);--rule-s:rgba(28,23,16,.05);
+  --serif:'Cormorant Garamond','Georgia',serif;
+  --body:'EB Garamond','Georgia',serif;
+  --mono:'DM Mono','Courier New',monospace;
+  --s1:5px;--s2:8px;--s3:13px;--s4:21px;--s5:34px;--s6:55px;--s7:89px;--s8:144px;
+  --nav-h:50px;
+}
+html{background:var(--paper);color-scheme:light;scroll-behavior:smooth}
+body{font-family:var(--body);font-size:1rem;line-height:1.618;color:var(--umber);overflow-x:hidden;cursor:none}
+@media(prefers-reduced-motion:reduce){body{cursor:auto}.cur,.cur-ring{display:none!important}*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+::selection{background:rgba(80,104,69,.14);color:var(--deep)}
+body::after{content:'';position:fixed;inset:0;z-index:9000;pointer-events:none;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(28,23,16,.009) 3px,rgba(28,23,16,.009) 4px),repeating-linear-gradient(90deg,transparent 0,transparent 5px,rgba(28,23,16,.006) 5px,rgba(28,23,16,.006) 6px)}
+#prog{position:fixed;top:0;left:0;height:2px;z-index:1001;background:linear-gradient(90deg,var(--rust),var(--moss),var(--slate));width:0%;transition:width .1s linear}
+.cur{position:fixed;z-index:9999;pointer-events:none;transform:translate(-50%,-50%)}
+.cur::before{content:'';position:absolute;left:-10px;top:50%;width:20px;height:1px;background:var(--oak);transform:translateY(-50%);opacity:.6}
+.cur::after{content:'';position:absolute;top:-10px;left:50%;height:20px;width:1px;background:var(--oak);transform:translateX(-50%);opacity:.6}
+.cur-ring{position:fixed;z-index:9998;pointer-events:none;width:22px;height:22px;border:1px solid rgba(80,104,69,.35);border-radius:50%;transform:translate(-50%,-50%);transition:width .35s cubic-bezier(.175,.885,.32,1.4),height .35s cubic-bezier(.175,.885,.32,1.4),border-color .25s,transform .42s cubic-bezier(.175,.885,.32,1.275)}
+.cur-ring.h{width:38px;height:38px;border-color:var(--moss)}
+.sphere{width:15px;height:15px;border-radius:50%;position:relative;flex-shrink:0;background:radial-gradient(circle at 34% 30%,rgba(80,104,69,.28) 0%,var(--deep) 52%,#0A0908 100%);border:1px solid rgba(28,23,16,.20);box-shadow:0 0 10px rgba(80,104,69,.20),inset 0 0 5px rgba(0,0,0,.45),1px 2px 3px rgba(28,23,16,.12);animation:breath 5.5s ease-in-out infinite}
+.sphere--sm{width:12px;height:12px}
+@keyframes breath{0%,100%{box-shadow:0 0 8px rgba(80,104,69,.15),inset 0 0 5px rgba(0,0,0,.45)}50%{box-shadow:0 0 24px rgba(80,104,69,.35),inset 0 0 5px rgba(0,0,0,.45)}}
+.sphere::after{content:'';position:absolute;top:14%;left:18%;width:36%;height:24%;background:rgba(255,255,255,.16);border-radius:50%;filter:blur(1.5px);transform:rotate(-28deg)}
+/* Disclosure */
+.disc-banner{background:rgba(80,104,69,.07);border-bottom:1px solid rgba(80,104,69,.15);padding:var(--s2) var(--s6);display:flex;align-items:center;gap:var(--s3);font-family:var(--mono);font-size:.40rem;letter-spacing:.14em;text-transform:uppercase;color:var(--umber);margin-top:var(--nav-h)}
+.disc-banner a{color:var(--moss);text-decoration:none}.disc-banner a:hover{text-decoration:underline}
+.disc-dot{color:var(--moss)}
+/* Nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;height:var(--nav-h);display:flex;align-items:center;padding:0 var(--s6);background:rgba(242,237,227,.97);border-bottom:1px solid var(--rule);backdrop-filter:blur(18px);box-shadow:0 1px 0 var(--rule-s),0 4px 18px rgba(28,23,16,.04)}
+.nav-brand{display:flex;align-items:center;gap:var(--s3);text-decoration:none;margin-right:auto}
+.nav-wordmark{font-family:var(--serif);font-size:1.08rem;font-weight:600;letter-spacing:.02em;color:var(--deep);font-style:italic}
+.nav-instruments{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:var(--s4)}
+.nav-instr{display:flex;align-items:center;gap:var(--s2);font-family:var(--mono);font-size:.42rem;letter-spacing:.14em}
+.instr-label{color:var(--pale);letter-spacing:.18em;text-transform:uppercase}
+#specimen-count{color:var(--silt);transition:color 1.5s}#specimen-count.shifted{color:var(--rust)}#nav-clock{color:var(--silt)}
+.nav-sep{color:var(--pale);opacity:.4;font-size:.40rem}
+.nav-links{display:flex;align-items:center;gap:var(--s4)}
+.nav-link{font-family:var(--mono);font-size:.48rem;letter-spacing:.16em;text-transform:uppercase;color:var(--silt);text-decoration:none;transition:color .2s;position:relative}
+.nav-link::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:1px;background:var(--moss);transform:scaleX(0);transform-origin:left;transition:transform .28s}
+.nav-link:hover{color:var(--deep)}.nav-link:hover::after{transform:scaleX(1)}
+.nav-cta{color:var(--moss);border:1px solid rgba(80,104,69,.5);padding:var(--s1) var(--s3);transition:color .2s,background .2s}
+.nav-cta::after{display:none}.nav-cta:hover{color:var(--paper);background:var(--moss)}
+/* Footer */
+footer{border-top:1px solid var(--rule);background:var(--sheet);padding:var(--s6) var(--s6) var(--s4)}
+.footer-inner{display:grid;grid-template-columns:2fr 1fr 1fr;gap:var(--s6);max-width:1200px;margin:0 auto var(--s5)}
+.footer-brand{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s3)}
+.footer-wordmark{font-family:var(--serif);font-size:1rem;font-weight:600;font-style:italic;color:var(--deep)}
+.footer-desc{font-family:var(--body);font-size:.88rem;line-height:1.618;color:var(--silt);max-width:40ch;margin-bottom:var(--s3)}
+.footer-aff-note{font-family:var(--mono);font-size:.36rem;letter-spacing:.10em;text-transform:uppercase;color:var(--pale);line-height:1.8;padding:var(--s2) var(--s3);border:1px solid var(--rule);background:rgba(28,23,16,.02)}
+.footer-aff-note strong{color:var(--moss);display:block;margin-bottom:2px}
+.footer-aff-note a{color:var(--moss);text-decoration:none}.footer-aff-note a:hover{text-decoration:underline}
+.footer-label{font-family:var(--mono);font-size:.40rem;letter-spacing:.24em;text-transform:uppercase;color:var(--pale);margin-bottom:var(--s3);padding-bottom:var(--s2);border-bottom:1px solid var(--rule)}
+footer nav{display:flex;flex-direction:column;gap:var(--s2)}
+.footer-link{font-family:var(--body);font-size:.92rem;font-style:italic;color:var(--silt);text-decoration:none;transition:color .2s}
+.footer-link:hover{color:var(--deep)}
+.footer-base{display:flex;align-items:center;justify-content:space-between;padding-top:var(--s4);border-top:1px solid var(--rule);max-width:1200px;margin:0 auto}
+.footer-copy,.footer-tag{font-family:var(--mono);font-size:.38rem;letter-spacing:.14em;text-transform:uppercase;color:var(--pale)}
+@media(max-width:900px){.nav-instruments{display:none};nav{padding:0 var(--s4)}}
+@media(max-width:600px){.nav-link:not(.nav-cta){display:none}.footer-inner{grid-template-columns:1fr;gap:var(--s5)}}
 </style>
-
 <script>
-    (function () {
-        const nav = document.getElementById('gn-nav');
-        if (!nav) return;
-        const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
-        document.addEventListener('mousemove', (e: MouseEvent) => {
-            if (isMobile()) return;
-            const proximity = Math.max(0, 1 - e.clientY / 160);
-            nav.style.setProperty('--nav-reveal', proximity.toFixed(3));
-        });
-        document.addEventListener('mouseleave', () => {
-            if (!isMobile()) nav.style.setProperty('--nav-reveal', '0');
-        });
-    })();
+const cur=document.getElementById('cur'),cring=document.getElementById('cring');
+if(cur&&cring){let mx=0,my=0,dx=0,dy=0;document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.transform=`translate(${mx}px,${my}px)`;});(function loop(){dx+=(mx-dx)*.10;dy+=(my-dy)*.10;cring.style.transform=`translate(${dx}px,${dy}px) translate(-50%,-50%)`;requestAnimationFrame(loop);})();document.addEventListener('mouseover',e=>{if(e.target?.closest?.('a,button'))cring.classList.add('h');});document.addEventListener('mouseout',e=>{if(e.target?.closest?.('a,button'))cring.classList.remove('h');});}
+const baseCount=23+Math.floor(Math.random()*4);const scEl=document.getElementById('specimen-count');if(scEl){scEl.textContent=String(baseCount);setInterval(()=>{if(Math.random()<.012){scEl.textContent=String(baseCount+(Math.random()<.5?1:-1));scEl.classList.add('shifted');setTimeout(()=>{scEl.textContent=String(baseCount);scEl.classList.remove('shifted');},1800);}},3000);}
+let accum=0,lastT=Date.now();const clkEl=document.getElementById('nav-clock');function tickClk(){const now=Date.now();accum+=(now-lastT)*.97;lastT=now;const tzO=9*3600000;const real=new Date(Date.now()+tzO-new Date().getTimezoneOffset()*60000);const h=String(real.getUTCHours()).padStart(2,'0');const m=String(real.getUTCMinutes()).padStart(2,'0');const startSec=new Date(performance.timeOrigin+tzO-new Date().getTimezoneOffset()*60000).getUTCSeconds();const s=String(Math.floor(startSec+accum/1000)%60).padStart(2,'0');if(clkEl)clkEl.textContent=`${h}:${m}:${s}`;}tickClk();setInterval(tickClk,970);
+const prog=document.getElementById('prog');window.addEventListener('scroll',()=>{const d=document.documentElement;if(prog)prog.style.width=(d.scrollTop/(d.scrollHeight-d.clientHeight)*100)+'%';},{passive:true});
 </script>
