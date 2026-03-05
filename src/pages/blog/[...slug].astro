@@ -1,20 +1,16 @@
 ---
-// src/pages/blog/[slug].astro
-// 多言語対応ルーティング: /blog/[slug] → src/content/blog/{lang}/{slug}.md
+// src/pages/blog/[...slug].astro
+// [...slug] = スプレッドルート。"en/article-name" のような2段階パスに対応。
 
 import { getCollection } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
 
 export async function getStaticPaths() {
-  // content/blog コレクションの全記事を取得
-  // ファイルパス: src/content/blog/{lang}/{slug}.md
-  // Astroのslugは lang/slug になる (例: "en/my-article")
   let allPosts: any[] = [];
 
   try {
     allPosts = await getCollection('blog');
   } catch {
-    // 'blog' コレクションがない場合は 'posts' を試みる
     try {
       allPosts = await getCollection('posts');
     } catch {
@@ -23,14 +19,14 @@ export async function getStaticPaths() {
   }
 
   return allPosts.map((post) => ({
-    params: { slug: post.slug },
+    // post.slug = "en/article-name" → 配列 ["en", "article-name"] に分割
+    params: { slug: post.slug.split('/') },
     props: { post },
   }));
 }
 
 const { post } = Astro.props;
 const { Content } = await post.render();
-
 const fm = post.data;
 ---
 
